@@ -19,6 +19,16 @@ def translate(lines: List[str]) -> List[str]:
         if len(tokens) == 1:
             token = tokens[0]
             if token == "eq":
+                # @SP   point to top of stack
+                # D=M   put value at top of stack into D
+                # M=A   put value of A into M
+                # M=M-1 decrement M
+                # A=M   point to new top of stack
+                # D=D-M D <- difference of D and M
+                # M=!D  write !D to new top of stack
+                # D=A   D <- addr of top of stack
+                # @SP   point to top of stack
+                # M=D   write new addr to top of stack
                 pass
             elif token == "gt":
                 pass
@@ -31,6 +41,15 @@ def translate(lines: List[str]) -> List[str]:
             elif token == "or":
                 pass
             elif token == "add":
+                # @SP     a = &sp
+                # D=M     d = *a
+                # M=A     *a = a
+                # M=M-1   *a = *a - 1
+                # A=M     a = *a       point to new top
+                # M=D+M   *a = d + *a  add new top and old top into new top
+                # D=A     d = a
+                # @SP     a = &sp
+                # M=D     sp = d       sp points to new top of stack
                 pass
             else:
                 parsing_error(line_number, line)
