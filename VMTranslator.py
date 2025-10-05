@@ -19,16 +19,16 @@ def translate(lines: List[str]) -> List[str]:
         if len(tokens) == 1:
             token = tokens[0]
             if token == "eq":
-                # @SP   point to top of stack
+                # @SP   A points to the stack pointer
+                # A=M   A points to wherever the stack pointer points
+                # A=A-1 A points to the top of the stack
                 # D=M   put value at top of stack into D
-                # M=A   put value of A into M
-                # M=M-1 decrement M
-                # A=M   point to new top of stack
-                # D=D-M D <- difference of D and M
+                # A=A-1 A points to top of stack - 1
+                # D=D-M D = *top - *(top-1)
                 # M=!D  write !D to new top of stack
-                # D=A   D <- addr of top of stack
-                # @SP   point to top of stack
-                # M=D   write new addr to top of stack
+                # D=A+1 D takes address of new top of stack
+                # @SP   A points to the stack pointer
+                # M=D   Write new addr to the stack pointer
                 pass
             elif token == "gt":
                 pass
@@ -57,6 +57,7 @@ def translate(lines: List[str]) -> List[str]:
             cmd, segment, num = tokens
 
             if cmd == "push":
+                # 
                 print(cmd, segment, num)
                 pass
             elif cmd == "pop":
