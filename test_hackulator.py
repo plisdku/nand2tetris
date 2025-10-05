@@ -86,14 +86,49 @@ def test_noop():
 
     for r1,r2 in zip(compy.ram, compy2.ram):
         assert r1 == r2
+import pytest
 
-def test_jumps():
+@pytest.mark.parametrize(
+    "jump_command, does_goto_dest",
+    [
+        ("-1;JGT", False),
+        ("0;JGT", False),
+        ("1;JGT", True),
+        ("-1;JEQ", False),
+        ("0;JEQ", True),
+        ("1;JEQ", False),
+        ("-1;JGE", False),
+        ("0;JGE", True),
+        ("1;JGE", True),
+        ("-1;JLT", True),
+        ("0;JLT", False),
+        ("1;JLT", False),
+        ("-1;JNE", True),
+        ("0;JNE", False),
+        ("1;JNE", True),
+        ("-1;JLE", True),
+        ("0;JLE", True),
+        ("1;JLE", False),
+        ("-1;JMP", True),
+        ("0;JMP", True),
+        ("1;JMP", True),
+    ]
+)
+def test_jumps(jump_command: str, does_goto_dest: bool):
     """
-    Test all the jump commands with simple programs.
+    Test that the jump commands move the program counter as expected
     """
+    dest = 3
+    program = f"@DEST\n{jump_command}\n" + "D\n" * (dest - 2) + "(DEST)\nD"
 
-    pass
+    compy = hackulator.Compy386(program)
+    compy.step()  # @DEST
+    compy.step()  # jump
 
+    if does_goto_dest:
+        assert compy.pc == dest
+    else:
+        assert compy.pc == 2
 
 
 
