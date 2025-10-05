@@ -7,17 +7,15 @@ def test_eq():
     hack_code = translate([vm_code])
 
     compy = Compy386("\n".join(hack_code))
-    print(compy.depth)
+    print(compy.depth())
     compy.push(1)
-    print(compy.depth)
+    print(compy.depth())
     compy.push(2)
-    assert compy.depth == 2
+    assert compy.depth() == 2
     compy.step()
-    assert compy.depth == 1
+    assert compy.depth() == 1
     print(compy.peek())
     pass
-
-test_eq()
 
 def test_gt():
     pass
