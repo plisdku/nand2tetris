@@ -5,8 +5,18 @@ from typing import List
 def parsing_error(line_number: int, line: str):
     raise ValueError((f"No idea how to parse this shit:\n" f"{line_number}: {line}"))
 
+SEGMENT_VM_TO_HACK = {
+    "temp": "5",
+    "local": "LCL",
+    "this": "THIS",
+    "that": "THAT",
+    "arg": "ARG"
+}
 
 def translate(lines: List[str]) -> List[str]:
+
+    out_lines = []
+
     for line_number, line in enumerate(lines):
         # Discard comment if any
         idx_comment = line.find("//")
@@ -19,19 +29,35 @@ def translate(lines: List[str]) -> List[str]:
         if len(tokens) == 1:
             token = tokens[0]
             if token == "eq":
-                # @SP   A points to the stack pointer
-                # A=M   A points to wherever the stack pointer points
-                # A=A-1 A points to the top of the stack
-                # D=M   put value at top of stack into D
-                # A=A-1 A points to top of stack - 1
-                # D=D-M D = *top - *(top-1)
-                # M=!D  write !D to new top of stack
-                # D=A+1 D takes address of new top of stack
-                # @SP   A points to the stack pointer
-                # M=D   Write new addr to the stack pointer
-                pass
+                # Compare top two items on stack
+
+                program = """
+                @SP
+                A=M-1 // Point A to top element of stack
+                D=M   // Copy top of stack to D
+                A=A-1 // Point A to second element of stack
+                M=D-M // Store stack[0]-stack[1] on top of stack
+                M=!M  // M is True if stack[0] eq stack[1]
+                @SP
+                M=M-1 // SP--
+                """
+                out_lines.extend(program.splitlines())
             elif token == "gt":
-                pass
+                # Compare top two items on stack
+
+                program = """
+                @SP
+                A=M-1 // Point A to stack[0]
+                D=M   // D = stack[0]
+                A=A-1 // Point A to stack[1]
+                D=D-M // Store stack[0]-stack[1] in D
+
+                // stack[1] > stack[0] if stack[0]-stack[1] is negative.
+                // check the sign bit? And that is???
+                """
+
+
+
             elif token == "lt":
                 pass
             elif token == "not":
@@ -57,10 +83,90 @@ def translate(lines: List[str]) -> List[str]:
             cmd, segment, num = tokens
 
             if cmd == "push":
-                # 
-                print(cmd, segment, num)
-                pass
+                if segment == "constant":
+                    program = f"""
+                        @{num}
+                        D=A
+                    """
+                else:
+                    assert segment in ("temp", "local", "this", "that", "arg")
+                    segment_symbol = SEGMENT_VM_TO_HACK[segment]
+
+                    program = f"""
+                        @{num}
+                        D=A
+                        @{segment_symbol}
+                        A=D+A
+                        D=M
+                    """
+
+                program += """
+                    @SP
+                    A=M
+                    M=D
+                    @SP
+                    M=M+1
+                """
+
             elif cmd == "pop":
+                # Write top of stack into a memory location.
+
+                assert segment in ("temp", "local", "this", "that", "arg")
+                segment_symbol = SEGMENT_VM_TO_HACK[segment]
+
+                if segment == "temp":
+                    # we'll directly write into RAM[temp + num],
+                    # i.e. *(&temp + num).
+
+                    assert segment_symbol == "5"
+
+                    program = f"""
+                        // Set write address to 5 + num and save to D
+                        @{num}
+                        D=A
+                        @{segment_symbol}
+                        D=D+A // sole difference between temp and other segments
+                    """
+                else:
+                    # we'll write into RAM[RAM[sp] + num],
+                    # i.e. *(sp + num)
+
+                    program = f"""
+                        // Set write address to segment_ptr + num and save to D
+                        @{num}
+                        D=A
+                        @{segment_symbol}
+                        D=D+M
+                    """
+
+                # Write address is in D. Save to R13
+                program += """
+                    // Save write address to R13
+                    @R13
+                    M=D
+                """
+
+                program += """
+                    // Decrement stack pointer and save top of stack to R13
+                    @SP
+                    M=M-1
+                    A=M
+                    D=M
+                    @R13
+                    A=M
+                    M=D
+                """
+            elif cmd == "label":
+                pass
+            elif cmd == "goto":
+                pass
+            elif cmd == "if-goto":
+                pass
+            elif cmd == "function":
+                pass
+            elif cmd == "call":
+                pass
+            elif cmd == "return":
                 pass
             else:
                 parsing_error(line_number, line)
@@ -69,7 +175,7 @@ def translate(lines: List[str]) -> List[str]:
         else:
             parsing_error(line_number, line)
 
-    return lines
+    return out_lines
 
 
 if __name__ == "__main__":
@@ -83,14 +189,16 @@ if __name__ == "__main__":
 
 # Some example lines:
 #
-# push constant [n]
-# pop local [n]
-# pop argument [n]
-# pop this [n]
-# pop that [n]
-# push local [n]
-# push pointer [n]
-# pop pointer [n]
+# push constant [n]: *sp++ = constant[n]
+# pop local [n]: local[n] = *(--sp)
+# pop argument [n]: argument[n] = *(--sp)
+# pop this [n]: this[n] = *(--sp)
+# pop that [n]: that[n] = *(--sp)
+# push temp i: *sp++ = *(5+i)
+# pop temp i: *(5+i) + *(--sp)
+# push local [n]: *sp++ = local[n]
+# push pointer 0/1: *sp++ = this/that   (any integer other than 0/1 is invalid)
+# pop pointer 0/1: this/that = *(--sp)
 # add
 # sub
 # and
@@ -99,3 +207,7 @@ if __name__ == "__main__":
 # eq
 # gt
 # lt
+#
+#
+# static symbols: each static variable i in Xxx.vm is translated
+# to the assembly symbol Xxx.i

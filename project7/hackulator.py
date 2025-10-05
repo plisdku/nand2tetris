@@ -81,6 +81,8 @@ def init_symbol_table() -> dict[str, int]:
     for (ii,sym) in enumerate(("SP", "LCL", "ARG", "THIS", "THAT")):
         symbol_table[sym] = ii
 
+    # temp segment is 5 through 12, inclusive.
+
     # Memory-map
     symbol_table["SCREEN"] = 16384
     symbol_table["KBD"] = 24576
@@ -197,10 +199,6 @@ def compute(comp: str, dd: int, aa: int, mm: int) -> int:
         tmp = (mm + 1)
     elif comp == "D-1":
         tmp = (dd + 0xFFFF) & 0xFFFF
-
-        print("D =", dd)
-        print("D-1 =", tmp)
-        assert (tmp & 0xFFFF) == (dd - 1) & 0xFFFF
     elif comp == "A-1":
         tmp = (aa + 0xFFFF)
     elif comp == "M-1":
@@ -226,7 +224,7 @@ def compute(comp: str, dd: int, aa: int, mm: int) -> int:
     elif comp == "D|M":
         tmp = (dd | mm)
     else:
-        raise ValueError(f"Confusing command '{comp}'")
+        raise ValueError(f"Unsupported command '{comp}'")
 
     tmp = tmp & 0xFFFF
     return tmp
@@ -239,11 +237,17 @@ class Compy386:
         self.register_a: int = 0
         self.ram: list[int] = [0]*(2**15)
         self.pc: int = 0
-        self.parsed_instructions: list[tuple[str,...]] = parse(program.splitlines())
+
+        parser = Parser()
+        parser.parse(program.splitlines())
+        self.parsed_instructions: list[tuple[str,...]] = parser.parsed_instructions
+        self.symbol_table = parser.symbol_table
+
+        self.stack_ptr: int = 256 # address of bottom of stack
 
     def step(self):
         """
-        Carry out 
+        Execute one hack instruction and update the program counter.
         """
         inst = self.parsed_instructions[self.pc]
         self.pc += 1
@@ -278,6 +282,40 @@ class Compy386:
                 (jump == "JLE" and signed_result <= 0) or
                 (jump == "JMP")):
                 self.pc = self.register_a
+
+    @property
+    def sp(self) -> int:
+        return self.ram[self.symbol_table["SP"]]
+
+    @sp.setter
+    def sp(self, value: int):
+        self.ram[self.symbol_table["SP"]] = value
+
+    def push(self, value: int):
+        self.ram[self.sp] = value
+        self.sp += 1
+
+    def pop(self) -> int:
+        self.sp -= 1
+        return self.ram[self.sp + 1]
+
+    def peek(self, depth: int = 0) -> int:
+        """
+        Look at the item on the top of the stack (at SP - 1).
+
+        Args:
+            depth: [OPTIONAL] number of entries below top of stack
+        Return:
+            value on top of stack (at SP - 1)
+        """
+        loc = self.sp - 1 - depth
+        if loc < self.stack_ptr:
+            raise ValueError(f"Underflow: cannot peek at stack[{loc - self.stack_ptr}]")
+        return self.ram[loc]
+
+    def depth(self) -> int:
+        """Return number of items on stack"""
+        return (self.sp-1) - self.stack_ptr
 
 
 if __name__ == "__main__":
