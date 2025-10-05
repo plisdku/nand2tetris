@@ -151,6 +151,12 @@ _DESTS = ["M", "D", "A"]
 _TESTS = list(itertools.product(_DESTS, _COMMANDS))
 @pytest.mark.parametrize("dest, command", _TESTS)
 def test_comps(dest, command):
+    """
+    Test the commands of the form dest=comp.
+
+    Hack allows the dest to be _multiple_ registers, e.g. 'DM=0'.
+    I don't test this because I'm being super lazy and using eval().
+    """
 
     a_value = 10
     m_value = 3
