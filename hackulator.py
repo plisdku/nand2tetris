@@ -187,6 +187,8 @@ def compute(comp: str, dd: int, aa: int, mm: int) -> int:
         tmp = (~dd + 1)
     elif comp == "-A":
         tmp = (~aa + 1)
+    elif comp == "-M":
+        tmp = (~mm + 1)
     elif comp == "D+1":
         tmp = (dd + 1)
     elif comp == "A+1":
@@ -194,11 +196,15 @@ def compute(comp: str, dd: int, aa: int, mm: int) -> int:
     elif comp == "M+1":
         tmp = (mm + 1)
     elif comp == "D-1":
-        tmp = (dd + 0xFFFE)
+        tmp = (dd + 0xFFFF) & 0xFFFF
+
+        print("D =", dd)
+        print("D-1 =", tmp)
+        assert (tmp & 0xFFFF) == (dd - 1) & 0xFFFF
     elif comp == "A-1":
-        tmp = (aa + 0xFFFE)
+        tmp = (aa + 0xFFFF)
     elif comp == "M-1":
-        tmp = (mm + 0xFFFE)
+        tmp = (mm + 0xFFFF)
     elif comp == "D+A":
         tmp = (aa + dd)
     elif comp == "D+M":

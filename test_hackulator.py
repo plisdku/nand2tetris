@@ -1,3 +1,5 @@
+import itertools
+import pytest
 import hackulator
 
 
@@ -27,16 +29,6 @@ MAX = """
   0;JMP
 """
 
-# nonsensical test
-JUMPS = """
-(PARIS)
-@x
-(BERLIN)
-0;JMP
-@BERLIN
-@y
-0;JMP
-"""
 
 def test_max_labels():
     """
@@ -49,16 +41,34 @@ def test_max_labels():
     assert parser.symbol_table["OUTPUT_D"] == 12
     assert parser.symbol_table["END"] == 14
 
+
 def test_user_symbols():
+    """
+    Check the construction of the symbol table for user-defined variables
+    """
+    # nonsensical test
+    program = """
+    (PARIS)
+    @x
+    (BERLIN)
+    0;JMP
+    @BERLIN
+    @y
+    0;JMP
+    """
+
     parser = hackulator.Parser()
-    parser.parse(JUMPS.splitlines())
+    parser.parse(program.splitlines())
 
     assert parser.symbol_table["x"] == 16
     assert parser.symbol_table["y"] == 17
 
-def test_run_max():
-    for (x,y) in [(0, 1), (1, 0), (100, 10), (10, 100), (-1 & 0xFFFF, -10 & 0xFFFF)]:
 
+def test_run_max():
+    """
+    Spot check the max program
+    """
+    for x, y in [(0, 1), (1, 0), (100, 10), (10, 100), (-1 & 0xFFFF, -10 & 0xFFFF)]:
         compy = hackulator.Compy386(MAX)
         compy.ram[0] = x
         compy.ram[1] = y
@@ -66,7 +76,8 @@ def test_run_max():
         for step in range(100):
             compy.step()
 
-        assert compy.ram[2] == max(x,y)
+        assert compy.ram[2] == max(x, y)
+
 
 def test_noop():
     """
@@ -84,9 +95,9 @@ def test_noop():
     compy2 = hackulator.Compy386(program)
     assert compy.register_d == compy2.register_d
 
-    for r1,r2 in zip(compy.ram, compy2.ram):
+    for r1, r2 in zip(compy.ram, compy2.ram):
         assert r1 == r2
-import pytest
+
 
 @pytest.mark.parametrize(
     "jump_command, does_goto_dest",
@@ -112,7 +123,7 @@ import pytest
         ("-1;JMP", True),
         ("0;JMP", True),
         ("1;JMP", True),
-    ]
+    ],
 )
 def test_jumps(jump_command: str, does_goto_dest: bool):
     """
@@ -131,5 +142,43 @@ def test_jumps(jump_command: str, does_goto_dest: bool):
         assert compy.pc == 2
 
 
+_COMMANDS = [
+    "0","1","-1","D","A","M","!D","!M","!A","-D","-A","-M",
+    "D+1","A+1","M+1","D-1","A-1","M-1","D+A","D+M","D-A","D-M",
+    "A-D","M-D","D&A","D&M","D|A","D|M",
+]
+_DESTS = ["M", "D", "A"]
+_TESTS = list(itertools.product(_DESTS, _COMMANDS))
+@pytest.mark.parametrize("dest, command", _TESTS)
+def test_comps(dest, command):
 
+    a_value = 10
+    m_value = 3
+    d_value = 4
+
+    program = f"@{a_value}\n{dest}={command}"
+
+    compy = hackulator.Compy386(program)
+    compy.ram[a_value] = m_value
+    compy.register_d = d_value
+
+    expected = eval(
+        command.replace("!", "~"), locals={"D": d_value, "A": a_value, "M": m_value}
+    )
+    expected = expected & 0xFFFF
+    compy.step()
+    compy.step()
+    got = eval(
+        dest,
+        locals={
+            "D": compy.register_d,
+            "A": compy.register_a,
+            "M": compy.ram[compy.register_a]
+            if compy.register_a < len(compy.ram)
+            else None,
+        },
+    )
+    got = got & 0xFFFF
+
+    assert got == expected
 
