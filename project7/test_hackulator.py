@@ -33,6 +33,9 @@ MAX = """
 
 def test_push_pop():
     compy = Compy386()
+
+    assert compy.sp == compy.stack_ptr
+
     compy.run()
 
     assert compy.depth() == 0

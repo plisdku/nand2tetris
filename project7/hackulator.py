@@ -247,6 +247,7 @@ class Compy386:
         self.symbol_table = parser.symbol_table
 
         self.stack_ptr: int = 256 # address of bottom of stack
+        self.sp = self.stack_ptr
 
     @classmethod
     def init_memory_segments_mapping(cls) -> str:
