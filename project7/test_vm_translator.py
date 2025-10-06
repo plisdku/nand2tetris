@@ -2,7 +2,9 @@ from typing import Callable
 import pytest
 from hackulator import Compy386
 from VMTranslator import translate
-from operator import and_, or_, add, sub
+from operator import and_, neg, or_, add, sub, not_, invert
+
+
 
 @pytest.mark.parametrize(("x", "y"), [(0,0), (0,1), (1,0), (1,1), (-1,1)])
 def test_eq(x: int, y: int):
@@ -90,18 +92,19 @@ def test_lt(x: int, y: int):
     else:
         assert not compy.peek()
 
+@pytest.mark.parametrize(("command", "op"), [("not", invert), ("neg", neg)])
 @pytest.mark.parametrize("x", (0, 1, -1, 4321))
-def test_not(x: int):
+def test_unary_op(x: int, command: str, op: Callable[[int], int]):
 
     vm_code = f"""
         push constant {x}
-        not
+        {command}
     """
     compy = Compy386(translate(vm_code))
     compy.run(print_line=False, print_registers=False, print_stack=False)
     assert compy.depth() == 1
 
-    assert compy.peek() == (~x) & 0xFFFF
+    assert compy.peek() == op(x) & 0xFFFF
 
 
 @pytest.mark.parametrize(("command", "op"), [("and", and_), ("or", or_), ("add", add), ("sub", sub)])

@@ -77,7 +77,14 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                 program = f"""
                 @SP
                 A=M-1  // point to top of stack
-                M=!M   // negate
+                M=!M   // logical negate
+                """
+                out_lines.extend(program.splitlines())
+            elif token == "neg":
+                program = f"""
+                @SP
+                A=M-1  // point to top of stack
+                M=-M   // arithmetic negate
                 """
                 out_lines.extend(program.splitlines())
             elif token == "and":
