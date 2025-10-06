@@ -15,12 +15,14 @@ SEGMENT_VM_TO_HACK = {
     "argument": "ARG"
 }
 
-def translate(program: str) -> str: #lines: List[str]) -> List[str]:
+def translate(program: str, namespace: str = "default") -> str: #lines: List[str]) -> List[str]:
     """
     Translate lines of VM code into Hack assembly.
+
+    Args:
+        program: VM code
+        namespace: should be the basename of the program file, e.g. MyProgram
     """
-
-
 
     lines = [line.strip() for line in program.splitlines()]
 
@@ -152,6 +154,15 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                         @{segment_symbol}
                         D=M
                     """
+                elif segment == "static":
+                    # Push Static.i onto the stack
+
+                    static_var = f"{namespace}.{num}"
+
+                    program = f"""
+                        @{static_var}
+                        D=M // copy value of {static_var} into D
+                    """
                 else:
                     assert segment in ("temp", "local", "this", "that", "argument"), f"{segment}"
 
@@ -179,12 +190,11 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
             elif cmd == "pop":
                 # Write top of stack into a memory location (segment base + offset)
 
-                assert segment in ("temp", "local", "this", "that", "pointer", "argument"), f"{segment}"
-
-                segment_symbol = SEGMENT_VM_TO_HACK[segment]
+                assert segment in ("temp", "local", "this", "that", "pointer", "argument", "static"), f"{segment}"
 
                 if segment == "temp":
                     # Write directly into RAM[temp+num]
+                    segment_symbol = SEGMENT_VM_TO_HACK[segment]
                     assert segment_symbol == "5"
 
                     program = f"""
@@ -226,7 +236,21 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                         A=M
                         M=D
                     """
+                elif segment == "static":
+                    # Pop from Static.{num}
+
+                    static_var = f"{namespace}.{num}"
+
+                    program = f"""
+                        @SP    // pop from stack
+                        AM=M-1 // SP = SP-1, A = addr of top
+                        D=M    // D = value at top
+
+                        @{static_var} // write to static var
+                        M=D
+                    """
                 else:
+                    segment_symbol = SEGMENT_VM_TO_HACK[segment]
                     program = f"""
                         // Save the write address
                         @{segment_symbol}

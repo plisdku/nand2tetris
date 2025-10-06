@@ -130,6 +130,20 @@ def test_init_stack():
     assert compy.sp == 256
 
 
+def test_push_static():
+
+    vm_program = f"""
+        push static 3
+    """
+
+    compy = Compy386(translate(vm_program))
+    compy.ram[compy.symbol_table["default.3"]] = 100
+    compy.run()
+
+    assert "default.3" in compy.symbol_table
+    assert compy.depth() == 1
+    assert compy.peek() == 100
+
 
 def test_push_constant():
     vm_program = """
@@ -193,6 +207,19 @@ def test_push_segment(segment_vm: str, segment_hack: Literal["LCL", "ARG", "THIS
     assert compy.peek(1) == 12
     assert compy.peek(2) == 10
 
+
+def test_pop_static():
+
+    vm_program = f"""
+        pop static 3
+    """
+
+    compy = Compy386(translate(vm_program))
+    compy.push(100)
+    compy.run()
+
+    assert "default.3" in compy.symbol_table
+    assert compy.ram[compy.symbol_table["default.3"]] == 100
 
 def test_pop_temp():
 
