@@ -206,6 +206,26 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                         A=M
                         M=D
                     """
+                elif segment == "pointer":
+                    # Write to RAM[THIS] or RAM[THAT]
+
+                    assert num in (0, 1), f"num = {num} unexpected for pointer"
+                    seg = "THIS" if num == 0 else "THAT"
+
+                    program = f"""
+                        @{seg} // Save the write address
+                        D=A
+                        @R14
+                        M=D // save write addr in R14
+
+                        @SP     // Pop from stack
+                        AM=M-1  // SP = SP-1, A = addr of top
+                        D=M     // D = value at top
+
+                        @R14    // Write to saved location
+                        A=M
+                        M=D
+                    """
                 else:
                     program = f"""
                         // Save the write address

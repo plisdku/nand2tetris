@@ -162,28 +162,6 @@ def test_push_pointer():
     assert compy.depth() == 2
     assert compy.get_stack() == [100, 200]
 
-def test_pop_pointer():
-    vm_program = """
-        pop pointer 1
-        pop pointer 0
-    """
-
-    print(translate(vm_program))
-
-    compy = Compy386(translate(vm_program))
-    compy.push(99)
-    compy.push(-99)
-    compy.run()
-
-    # assert compy.depth() == 0
-    # assert compy.ram[compy.symbol_table["THAT"]] == -99 # first pop to THAT
-    # assert compy.ram[compy.symbol_table["THIS"]] == 99 # second pop to THIS
-
-
-
-# test_pop_pointer()
-# exit(0)
-
 @pytest.mark.parametrize(("segment_vm", "segment_hack"),
     [("local", "LCL"), ("this", "THIS"), ("that", "THAT"), ("argument", "ARG")]
 )
@@ -237,6 +215,25 @@ def test_pop_temp():
     assert compy.ram[compy.symbol_table["TEMP"]+0] == 102
     assert compy.ram[compy.symbol_table["TEMP"]+2] == 101
     assert compy.ram[compy.symbol_table["TEMP"]+1] == 100
+
+
+def test_pop_pointer():
+    vm_program = """
+        pop pointer 1
+        pop pointer 0
+    """
+
+    # print(translate(vm_program))
+
+    compy = Compy386(translate(vm_program))
+    compy.push(99)
+    compy.push(-99)
+    compy.run(print_line=False, print_registers=False)
+
+    # assert compy.depth() == 1
+    assert compy.ram[compy.symbol_table["THAT"]] == -99 & 0xFFFF # first pop to THAT
+    assert compy.ram[compy.symbol_table["THIS"]] == 99 # second pop to THIS
+
 
 @pytest.mark.parametrize(("segment_vm", "segment_hack"),
     [("local", "LCL"), ("argument", "ARG"), ("this", "THIS"), ("that", "THAT") ]
