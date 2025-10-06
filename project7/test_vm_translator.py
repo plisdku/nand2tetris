@@ -2,7 +2,7 @@ from typing import Callable
 import pytest
 from hackulator import Compy386
 from VMTranslator import translate
-from operator import and_, or_, add
+from operator import and_, or_, add, sub
 
 @pytest.mark.parametrize(("x", "y"), [(0,0), (0,1), (1,0), (1,1), (-1,1)])
 def test_eq(x: int, y: int):
@@ -104,7 +104,7 @@ def test_not(x: int):
     assert compy.peek() == (~x) & 0xFFFF
 
 
-@pytest.mark.parametrize(("command", "op"), [("and", and_), ("or", or_), ("add", add)])
+@pytest.mark.parametrize(("command", "op"), [("and", and_), ("or", or_), ("add", add), ("sub", sub)])
 @pytest.mark.parametrize(("x", "y"), [(0,0), (1,0), (0,1), (2, 32), (-2, -1)])
 def test_binary_op(x: int, y: int, command: str, op: Callable[(int,int), int]):
 

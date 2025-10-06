@@ -107,6 +107,15 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                 M=D+M   // new top of stack = x+y
                 """
                 out_lines.extend(program.splitlines())
+            elif token == "sub":
+                program = f"""
+                @SP
+                AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
+                D=M     // D = "y"
+                A=A-1   // point to "x"
+                M=M-D   // new top of stack = x+y
+                """
+                out_lines.extend(program.splitlines())
             else:
                 parsing_error(line_number, line)
         elif len(tokens) == 3:
