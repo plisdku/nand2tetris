@@ -172,8 +172,7 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
                         @{num}
                         D=A
                         @{segment_symbol}
-                        A=M
-                        A=D+A
+                        A=M+D
                         D=M
                     """
 
@@ -197,12 +196,18 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
                     segment_symbol = SEGMENT_VM_TO_HACK[segment]
                     assert segment_symbol == "5"
 
+                    # first used this.
+                    # @{segment_symbol}
+                    # D=A
+                    # @{num}
+                    # D=D+A
+
                     program = f"""
                         // Save the write address
-                        @{segment_symbol}
-                        D=A
                         @{num}
-                        D=D+A
+                        D=A
+                        @{segment_symbol}
+                        D=A+D
                         @R15
                         M=D // save write addr in R15
 
