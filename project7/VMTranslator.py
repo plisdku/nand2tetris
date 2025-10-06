@@ -324,7 +324,7 @@ if __name__ == "__main__":
             fh.write(hack_code)
 
         print("Translation succeded.")
-        print(hack_code)
+        # print(hack_code)
     except Exception as exc:
         print(exc)
 
