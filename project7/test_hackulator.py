@@ -1,6 +1,7 @@
 import itertools
+from typing import Literal
 import pytest
-import hackulator
+from hackulator import Compy386, Parser
 
 
 # Computes R2 = max(R0, R1)  (R0,R1,R2 refer to RAM[0],RAM[1],RAM[2])
@@ -30,11 +31,28 @@ MAX = """
 """
 
 
+def test_push_pop():
+    compy = Compy386()
+    compy.run()
+
+    print(compy.stack_ptr)
+    print(compy.sp)
+
+    assert compy.depth() == 0
+    compy.push(1)
+    assert compy.depth() == 1
+    compy.push(-2)
+    assert compy.depth() == 2
+    compy.push(3)
+    assert compy.depth() == 3
+
+
+
 def test_max_labels():
     """
     Check that labels are resolved to the correct instructions
     """
-    parser = hackulator.Parser()
+    parser = Parser()
     parser.parse(MAX.splitlines())
 
     assert parser.symbol_table["ITSR0"] == 10
@@ -57,7 +75,7 @@ def test_user_symbols():
     0;JMP
     """
 
-    parser = hackulator.Parser()
+    parser = Parser()
     parser.parse(program.splitlines())
 
     assert parser.symbol_table["x"] == 16
@@ -69,7 +87,7 @@ def test_run_max():
     Spot check the max program
     """
     for x, y in [(0, 1), (1, 0), (100, 10), (10, 100), (-1 & 0xFFFF, -10 & 0xFFFF)]:
-        compy = hackulator.Compy386(MAX, init_sp=False)
+        compy = Compy386(MAX, init_sp=False)
         compy.ram[0] = x
         compy.ram[1] = y
 
@@ -87,12 +105,12 @@ def test_noop():
     program = """
     D
     """
-    compy = hackulator.Compy386(program, init_sp=False)
+    compy = Compy386(program, init_sp=False)
     compy.step()
     assert compy.pc == 1
 
     # Verify that nothing happened
-    compy2 = hackulator.Compy386(program, init_sp=False)
+    compy2 = Compy386(program, init_sp=False)
     assert compy.register_d == compy2.register_d
 
     for r1, r2 in zip(compy.ram, compy2.ram):
@@ -102,8 +120,8 @@ def test_noop():
 @pytest.mark.parametrize(
     "segment, base_addr", [("LCL", 40), ("THIS", 50), ("THAT", 60), ("ARG", 70)]
 )
-def test_get_set_segment_base(segment: str, base_addr: int):
-    compy = hackulator.Compy386()
+def test_get_set_segment_base(segment: Literal["LCL", "THIS", "THAT", "ARG"], base_addr: int):
+    compy = Compy386()
     compy.set_segment_base(segment, base_addr)
     assert compy.segment_base(segment) == base_addr
 
@@ -111,8 +129,8 @@ def test_get_set_segment_base(segment: str, base_addr: int):
     "segment, base_addr, offset, value",
     [("LCL", 100, 10, 1), ("THIS", 200, 20, -2), ("THAT", 300, 30, -3), ("ARG", 400, 0, 4)]
 )
-def test_get_set_segment(segment: str, base_addr: int, offset: int, value: int):
-    compy = hackulator.Compy386()
+def test_get_set_segment(segment: Literal["LCL", "THIS", "THAT", "ARG"], base_addr: int, offset: int, value: int):
+    compy = Compy386()
     compy.set_segment_base(segment, base_addr)
     compy.set_in_segment(segment, offset, value & 0xFFFF)
     assert compy.get_in_segment(segment, offset) == value & 0xFFFF
@@ -151,7 +169,7 @@ def test_jumps(jump_command: str, does_goto_dest: bool):
     dest = 3
     program = f"@DEST\n{jump_command}\n" + "D\n" * (dest - 2) + "(DEST)\nD"
 
-    compy = hackulator.Compy386(program, init_sp=False)
+    compy = Compy386(program, init_sp=False)
 
     compy.step()  # @DEST
     compy.step()  # jump
@@ -211,7 +229,7 @@ def test_comps(dest, command):
 
     program = f"@{a_value}\n{dest}={command}"
 
-    compy = hackulator.Compy386(program, init_sp=False)
+    compy = Compy386(program, init_sp=False)
     compy.ram[a_value] = m_value
     compy.register_d = d_value
 

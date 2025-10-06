@@ -329,11 +329,9 @@ class Compy386:
             print("  d:", self.register_d)
 
     def set_segment_base(self, segment: Literal["LCL", "ARG", "THIS", "THAT"], base_addr: int):
-        segment = segment.upper()
         assert segment in ("LCL", "ARG", "THIS", "THAT")
         self.ram[self.symbol_table[segment]] = base_addr
 
-    
     def get_stack(self) -> list[int]:
         return self.ram[self.stack_ptr:self.ram[self.symbol_table["SP"]]]
 
@@ -411,7 +409,7 @@ class Compy386:
 
     def depth(self) -> int:
         """Return number of items on stack"""
-        return (self.sp-1) - self.stack_ptr
+        return self.sp - self.stack_ptr
 
 
 if __name__ == "__main__":

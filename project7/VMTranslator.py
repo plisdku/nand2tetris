@@ -35,7 +35,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
         if len(tokens) == 1:
             token = tokens[0]
             if token == "eq":
-                # Compare top two items on stack
+                # Compare top two items on stack.
 
                 program = """
                 @SP

@@ -54,7 +54,7 @@ def test_push_constant():
     compy = Compy386(translate(vm_program))
     compy.run(print_line=False)
 
-    assert compy.depth() == 2
+    assert compy.depth() == 3
     assert compy.peek() == 1
     assert compy.peek(1) == 0
     assert compy.peek(2) == (-1 & 0xFFFF)
@@ -86,7 +86,7 @@ def test_push(segment_vm: str, segment_hack: str):
 
     assert compy.get_stack() == [10, 12, -11 & 0xFFFF]
 
-    assert compy.depth() == 2
+    assert compy.depth() == 3
     assert compy.peek() == -11 & 0xFFFF
     assert compy.peek(1) == 12
     assert compy.peek(2) == 10
