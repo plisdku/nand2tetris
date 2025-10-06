@@ -144,6 +144,20 @@ def test_push_constant():
     assert compy.peek(1) == 0
     assert compy.peek(2) == (-1 & 0xFFFF)
 
+def test_push_pointer():
+    vm_program = """
+        push pointer 0
+        push pointer 1
+    """
+
+    compy = Compy386(translate(vm_program))
+    compy.set_segment_base("THIS", 100)
+    compy.set_segment_base("THAT", 200)
+    compy.run()
+
+    assert compy.depth() == 2
+    assert compy.get_stack() == [100, 200]
+
 
 @pytest.mark.parametrize(("segment_vm", "segment_hack"),
     [("local", "LCL"), ("this", "THIS"), ("that", "THAT"), ("argument", "ARG")]
