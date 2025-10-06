@@ -267,7 +267,7 @@ class Compy386:
 
         return program
 
-    def run(self, max_steps: int = 1000, print_line: bool = False, print_registers: bool = False):
+    def run(self, max_steps: int = 1000, print_line: bool = False, print_registers: bool = False, print_stack: bool = False):
         """
         Call step() until the pc is past the length of the program.
         """
@@ -275,9 +275,9 @@ class Compy386:
         for s in range(max_steps):
             if self.pc >= len(self.parsed_instructions):
                 break
-            self.step(print_line, print_registers)
+            self.step(print_line, print_registers, print_stack)
 
-    def step(self, print_line: bool = False, print_registers: bool = False):
+    def step(self, print_line: bool = False, print_registers: bool = False, print_stack: bool = False):
         """
         Execute one hack instruction and update the program counter.
         """
@@ -328,6 +328,8 @@ class Compy386:
             print("  a:", self.register_a)
             print("  m:", self.ram[self.register_a])
             print("  d:", self.register_d)
+        if print_stack:
+            print("  ", self.get_stack())
 
     def set_segment_base(self, segment: Literal["LCL", "ARG", "THIS", "THAT"], base_addr: int):
         assert segment in ("LCL", "ARG", "THIS", "THAT")
