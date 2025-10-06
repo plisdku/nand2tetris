@@ -224,8 +224,19 @@ def test_pop_temp():
         pop temp 1
     """
 
-    print(translate(vm_program))
+    # print(translate(vm_program))
 
+    compy = Compy386(translate(vm_program))
+    compy.push(100)
+    compy.push(101)
+    compy.push(102)
+    compy.run(print_line=False, print_registers=False)
+
+    assert compy.depth() == 0
+
+    assert compy.ram[compy.symbol_table["TEMP"]+0] == 102
+    assert compy.ram[compy.symbol_table["TEMP"]+2] == 101
+    assert compy.ram[compy.symbol_table["TEMP"]+1] == 100
 
 @pytest.mark.parametrize(("segment_vm", "segment_hack"),
     [("local", "LCL"), ("argument", "ARG"), ("this", "THIS"), ("that", "THAT") ]

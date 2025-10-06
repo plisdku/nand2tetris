@@ -188,15 +188,23 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                     assert segment_symbol == "5"
 
                     program = f"""
-                    @SP
-                    AM=M-1  // SP = SP-1, A = addr of top
-                    D=M     // D = value at top
-                    @R15
-                    M=D     // save the popped value
-                    @{num}
-                    D=A     // D = offset
-                    @{segment_symbol}
-                    A=D+A   // A = address to write to
+                        // Save the write address
+                        @{segment_symbol}
+                        D=A
+                        @{num}
+                        D=D+A
+                        @R13
+                        M=D // save write addr in R13
+
+                        // Pop from stack
+                        @SP
+                        AM=M-1  // SP = SP-1, A = addr of top
+                        D=M     // D = value at top
+
+                        // Write to saved location
+                        @R13
+                        A=M
+                        M=D
                     """
                 else:
                     program = f"""

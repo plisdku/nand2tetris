@@ -90,6 +90,7 @@ def init_symbol_table() -> dict[str, int]:
         symbol_table[sym] = ii
 
     # temp segment is 5 through 12, inclusive.
+    symbol_table["TEMP"] = 5
 
     # Memory-map
     symbol_table["SCREEN"] = 16384
