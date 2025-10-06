@@ -226,7 +226,7 @@ def test_pop_temp():
     vm_program = f"""
         pop temp 0
         pop temp 2
-        pop temp 1
+        pop temp 6
     """
 
     # print(translate(vm_program))
@@ -239,10 +239,10 @@ def test_pop_temp():
 
     assert compy.depth() == 0
 
+    assert compy.symbol_table["TEMP"] == 5
     assert compy.ram[compy.symbol_table["TEMP"]+0] == 102
     assert compy.ram[compy.symbol_table["TEMP"]+2] == 101
-    assert compy.ram[compy.symbol_table["TEMP"]+1] == 100
-
+    assert compy.ram[compy.symbol_table["TEMP"]+6] == 100
 
 def test_pop_pointer():
     vm_program = """

@@ -433,11 +433,22 @@ if __name__ == "__main__":
     # Execute the program
 
     compy = Compy386(hack_program)
+    compy.stack_ptr = 256
+    compy.set_segment_base("LCL", 300)
+    compy.set_segment_base("ARG", 400)
+    compy.set_segment_base("THIS", 3000)
+    compy.set_segment_base("THAT", 3010)
+
     compy.run(max_steps=191, print_line=False, print_registers=False)
 
     print("DONE")
 
-    print(compy.ram[:30])
+    idx_test = [256, 300, 401, 402, 3006, 3012, 3015, 11]
+
+    print([compy.ram[ii] for ii in idx_test])
+    print(compy.ram[:16])
+
+    # print(compy.ram[:30])
     # for ii, val in enumerate(compy.ram[:30]):
     #     print(f"{ii:04d}: {val}")
 
