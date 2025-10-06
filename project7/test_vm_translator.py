@@ -88,8 +88,18 @@ def test_lt(x: int, y: int):
     else:
         assert not compy.peek()
 
-def test_not():
-    pass
+@pytest.mark.parametrize("x", (0, 1, -1, 4321))
+def test_not(x: int):
+
+    vm_code = f"""
+        push constant {x}
+        not
+    """
+    compy = Compy386(translate(vm_code))
+    compy.run(print_line=False, print_registers=False, print_stack=False)
+    assert compy.depth() == 1
+
+    assert compy.peek() == (~x) & 0xFFFF
 
 def test_and():
     pass

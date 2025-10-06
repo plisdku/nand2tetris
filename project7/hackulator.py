@@ -332,7 +332,7 @@ class Compy386:
 
         if print_registers:
             print("  a:", self.register_a)
-            print("  m:", self.ram[self.register_a])
+            print("  m:", self.ram[self.register_a] if 0 <= self.register_a < len(self.ram) else None)
             print("  d:", self.register_d)
         if print_stack:
             print("  ", self.get_stack())

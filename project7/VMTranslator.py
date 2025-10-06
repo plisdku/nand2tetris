@@ -74,22 +74,39 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                 program = _compare("lt", "JGE")
                 out_lines.extend(program.splitlines())
             elif token == "not":
-                pass
+                program = f"""
+                @SP
+                A=M-1  // point to top of stack
+                M=!M   // negate
+                """
+                out_lines.extend(program.splitlines())
             elif token == "and":
-                pass
+                program = f"""
+                @SP
+                AM=A-1  // SP = SP-1; A = SP-1 (top of stack)
+                D=M     // D = "y"
+                A=A-1
+                M=D&M   // new top of stack = x and y
+                """
+                out_lines.extend(program.splitlines())
             elif token == "or":
-                pass
+                program = f"""
+                @SP
+                AM=A-1  // SP = SP-1; A = SP-1 (top of stack)
+                D=M     // D = "y"
+                A=A-1   // point to "x"
+                M=D|M   // new top of stack = x or y
+                """
+                out_lines.extend(program.splitlines())
             elif token == "add":
-                # @SP     a = &sp
-                # D=M     d = *a
-                # M=A     *a = a
-                # M=M-1   *a = *a - 1
-                # A=M     a = *a       point to new top
-                # M=D+M   *a = d + *a  add new top and old top into new top
-                # D=A     d = a
-                # @SP     a = &sp
-                # M=D     sp = d       sp points to new top of stack
-                pass
+                program = f"""
+                @SP
+                AM=A-1  // SP = SP-1; A = SP-1 (top of stack)
+                D=M     // D = "y"
+                A=A-1   // point to "x"
+                M=M+D   // new top of stack = x+y
+                """
+                out_lines.extend(program.splitlines())
             else:
                 parsing_error(line_number, line)
         elif len(tokens) == 3:
