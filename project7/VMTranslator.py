@@ -104,7 +104,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                 AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
                 D=M     // D = "y"
                 A=A-1   // point to "x"
-                M=M+D   // new top of stack = x+y
+                M=D+M   // new top of stack = x+y
                 """
                 out_lines.extend(program.splitlines())
             else:

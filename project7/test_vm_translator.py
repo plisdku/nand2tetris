@@ -1,6 +1,8 @@
+from typing import Callable
 import pytest
 from hackulator import Compy386
 from VMTranslator import translate
+from operator import and_, or_, add
 
 @pytest.mark.parametrize(("x", "y"), [(0,0), (0,1), (1,0), (1,1), (-1,1)])
 def test_eq(x: int, y: int):
@@ -101,25 +103,20 @@ def test_not(x: int):
 
     assert compy.peek() == (~x) & 0xFFFF
 
+
+@pytest.mark.parametrize(("command", "op"), [("and", and_), ("or", or_), ("add", add)])
 @pytest.mark.parametrize(("x", "y"), [(0,0), (1,0), (0,1), (2, 32), (-2, -1)])
-def test_and(x: int, y: int):
+def test_binary_op(x: int, y: int, command: str, op: Callable[(int,int), int]):
 
     vm_code = f"""
         push constant {x}
         push constant {y}
-        and
+        {command}
     """
     compy = Compy386(translate(vm_code))
     compy.run(print_line=False, print_registers=False, print_stack=False)
     assert compy.depth() == 1
-    assert compy.peek() == (x&y) & 0xFFFF
-
-
-def test_or():
-    pass
-
-def test_add():
-    pass
+    assert compy.peek() == op(x,y) & 0xFFFF
 
 def test_init_stack():
     """
