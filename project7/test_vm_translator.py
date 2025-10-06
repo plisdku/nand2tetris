@@ -22,6 +22,31 @@ def test_eq(x: int, y: int):
     else:
         assert not compy.peek()
 
+def test_multi_eq():
+    """Because each eq makes its own label, want to check that I can have
+    several of them."""
+
+    vm_code = f"""
+        push constant 0
+        push constant 0
+        eq
+        push constant 1
+        push constant 0
+        eq
+        push constant 0
+        push constant -1
+        eq
+        push constant 1
+        push constant 1
+        eq
+    """
+
+    compy = Compy386(translate(vm_code))
+    compy.run()
+    assert compy.depth() == 4
+
+    assert compy.get_stack() == [0xFFFF, 0, 0, 0xFFFF]
+
 
 def test_gt():
     pass
