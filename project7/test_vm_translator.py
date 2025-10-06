@@ -67,8 +67,26 @@ def test_gt(x: int, y: int):
     else:
         assert not compy.peek()
 
-def test_lt():
-    pass
+
+@pytest.mark.parametrize(("x", "y"), [(0,0), (0,1), (1,0), (1,1), (-1,1)])
+def test_lt(x: int, y: int):
+
+    vm_code = f"""
+        push constant {x}
+        push constant {y}
+        lt
+    """
+
+    compy = Compy386(translate(vm_code))
+    compy.run()
+    assert compy.depth() == 1
+
+    print(f"{x} < {y}: {compy.peek()}")
+
+    if x < y:
+        assert compy.peek()
+    else:
+        assert not compy.peek()
 
 def test_not():
     pass
