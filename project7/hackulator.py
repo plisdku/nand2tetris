@@ -232,14 +232,14 @@ def compute(comp: str, dd: int, aa: int, mm: int) -> int:
 
 class Compy386:
 
-    def __init__(self, program: str = "", init_sp: bool = True):
+    def __init__(self, program: str = ""): #, init_sp: bool = True):
         self.register_d: int = 0
         self.register_a: int = 0
         self.ram: list[int] = [0]*(2**15)
         self.pc: int = 0
 
-        if init_sp:
-            program = self.init_memory_segments_mapping() + "\n" + program
+        # if init_sp:
+            # program = self.init_memory_segments_mapping() + "\n" + program
 
         parser = Parser()
         parser.parse(program.splitlines())

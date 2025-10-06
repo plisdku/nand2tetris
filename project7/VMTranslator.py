@@ -37,6 +37,13 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
             if token == "eq":
                 # Compare top two items on stack.
 
+                # Strategy: the top two elements on the stack are x and y.
+                # Equality means x-y == 0.
+                # That is, x+(-y) == 0.
+                #
+                # The truthy value is ~(x+(-y)).
+                # So calculate that somehow.
+
                 program = """
                 @SP
                 A=M-1 // Point A to top element of stack

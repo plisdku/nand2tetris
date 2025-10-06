@@ -94,7 +94,7 @@ def test_run_max():
     Spot check the max program
     """
     for x, y in [(0, 1), (1, 0), (100, 10), (10, 100), (-1 & 0xFFFF, -10 & 0xFFFF)]:
-        compy = Compy386(MAX, init_sp=False)
+        compy = Compy386(MAX)
         compy.ram[0] = x
         compy.ram[1] = y
 
@@ -112,12 +112,12 @@ def test_noop():
     program = """
     D
     """
-    compy = Compy386(program, init_sp=False)
+    compy = Compy386(program)
     compy.step()
     assert compy.pc == 1
 
     # Verify that nothing happened
-    compy2 = Compy386(program, init_sp=False)
+    compy2 = Compy386(program)
     assert compy.register_d == compy2.register_d
 
     for r1, r2 in zip(compy.ram, compy2.ram):
@@ -176,7 +176,7 @@ def test_jumps(jump_command: str, does_goto_dest: bool):
     dest = 3
     program = f"@DEST\n{jump_command}\n" + "D\n" * (dest - 2) + "(DEST)\nD"
 
-    compy = Compy386(program, init_sp=False)
+    compy = Compy386(program)
 
     compy.step()  # @DEST
     compy.step()  # jump
@@ -236,7 +236,7 @@ def test_comps(dest, command):
 
     program = f"@{a_value}\n{dest}={command}"
 
-    compy = Compy386(program, init_sp=False)
+    compy = Compy386(program)
     compy.ram[a_value] = m_value
     compy.register_d = d_value
 

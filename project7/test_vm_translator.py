@@ -10,10 +10,21 @@ def test_eq(x: int, y: int):
         eq
     """
 
+    print(translate(vm_code))
     compy = Compy386(translate(vm_code))
     compy.run(print_stack=True)
 
+    assert compy.depth() == 1
+
+    if x == y:
+        assert compy.peek()
+    else:
+        assert not compy.peek()
+
 test_eq(0, 0)
+test_eq(0, 1)
+test_eq(1, 0)
+test_eq(1, 1)
 exit(0)
 
 def test_gt():
