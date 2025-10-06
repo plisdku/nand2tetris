@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Literal
 import pytest
 from hackulator import Compy386
 from VMTranslator import translate
@@ -146,12 +146,12 @@ def test_push_constant():
 
 
 @pytest.mark.parametrize(("segment_vm", "segment_hack"),
-    [("local", "LCL"), ("this", "THIS"), ("that", "THAT"), ("arg", "ARG"), ("temp", "TEMP")]
+    [("local", "LCL"), ("this", "THIS"), ("that", "THAT"), ("argument", "ARG")]
 )
-def test_push(segment_vm: str, segment_hack: str):
-
-    segment_vm = "local"
-    segment_hack = "LCL"
+def test_push_segment(segment_vm: str, segment_hack: Literal["LCL", "ARG", "THIS", "THAT"]):
+    """
+    Test pushing to the local, this, that, or argument segments.
+    """
 
     # Note that we're pushing OUT OF ORDER.
     # Just making it a little harder to be right by accident alone.

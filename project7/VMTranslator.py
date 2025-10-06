@@ -18,6 +18,9 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
     """
     Translate lines of VM code into Hack assembly.
     """
+
+
+
     lines = [line.strip() for line in program.splitlines()]
 
     out_lines = []
@@ -130,13 +133,26 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
             num = int(num) & 0xFFFF
 
             if cmd == "push":
+                
+                # Set D to the value we want to push onto the stack.
+
                 if segment == "constant":
                     program = f"""
                         @{num} // {cmd} {segment} {num}
                         D=A
                     """
+                elif segment == "pointer":
+                    # Push the THIS or THAT pointer onto the stack.
+                    assert num in (0, 1), f"num ({num}) is not what I expected"
+
+                    segment_symbol = "THIS" if num == 0 else "THAT"
+
+                    program = f"""
+                        @{segment_symbol}
+                        D=M
+                    """
                 else:
-                    assert segment in ("temp", "local", "this", "that", "argument")
+                    assert segment in ("temp", "local", "this", "that", "argument"), f"{segment}"
                     segment_symbol = SEGMENT_VM_TO_HACK[segment]
 
                     program = f"""
@@ -161,7 +177,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
             elif cmd == "pop":
                 # Write top of stack into a memory location.
 
-                assert segment in ("temp", "local", "this", "that", "argument")
+                assert segment in ("temp", "local", "this", "that", "argument"), f"{segment}"
                 segment_symbol = SEGMENT_VM_TO_HACK[segment]
 
                 program = f"""
@@ -172,7 +188,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                     # we'll directly write into RAM[temp + num],
                     # i.e. *(&temp + num).
 
-                    assert segment_symbol == "5"
+                    assert segment_symbol == "5", f"{segment_symbol}"
 
                     program += f"""
                         @{num} // Set write address to 5 + num and save to D
@@ -232,14 +248,10 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
 
 
 if __name__ == "__main__":
-    print(sys.argv)
-
     if len(sys.argv) < 2:
         raise Exception("Usage: VMTranslator <filename>")
 
     hack_code = translate(open(sys.argv[1]).read())
-
-    print(hack_code)
 
     arg = os.path.basename(sys.argv[1])
 
