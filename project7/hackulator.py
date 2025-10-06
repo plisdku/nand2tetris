@@ -19,25 +19,33 @@ def parse_instruction(instruction: str):
     Returns:
         (opcode, *args)
     """
-    if instruction[0] == "(" and instruction[-1] == ")":
-        # Label
-        return ("L", instruction[1:-1])
 
-    elif instruction[0] == "@":
+    instruction = instruction.strip()
+    parts = instruction.split("//")
+    command = parts[0].strip()
+    if not command:
+        return None
+    comment = parts[1].strip() if len(parts) > 1 else ""
+
+    if command[0] == "(" and command[-1] == ")":
+        # Label
+        return ("L", command[1:-1], comment)
+
+    elif command[0] == "@":
         # A-instruction
-        addr = instruction[1:]
+        addr = command[1:]
 
         try:
             addr = int(addr)
         except ValueError as exc:
             # it's a string, fine
             pass
-        return ("A", addr)
+        return ("A", addr, comment)
 
     else:
         # C-instruction
 
-        parts = instruction.split("=")
+        parts = command.split("=")
         if len(parts) == 1:
             dest = None
             comp_jump = parts[0]
@@ -53,16 +61,16 @@ def parse_instruction(instruction: str):
             assert len(parts) == 2
             comp, jump = parts
 
-        return ("C", dest, comp, jump)
+        return ("C", dest, comp, jump, comment)
 
 
 def test_parse():
-    assert parse_instruction("@44") == ("A", 44)
-    assert parse_instruction("@SP") == ("A", "SP")
-    assert parse_instruction("M=M-1") == ("C", "M", "M-1", None)
-    assert parse_instruction("D|A") == ("C", None, "D|A", None)
-    assert parse_instruction("!D;JGE") == ("C", None, "!D", "JGE")
-    assert parse_instruction("(LOOP)") == ("L", "LOOP")
+    assert parse_instruction("@44") == ("A", 44, "")
+    assert parse_instruction(" @SP") == ("A", "SP", "")
+    assert parse_instruction("M=M-1 //") == ("C", "M", "M-1", None, "")
+    assert parse_instruction("D|A") == ("C", None, "D|A", None, "")
+    assert parse_instruction("!D;JGE    // yes") == ("C", None, "!D", "JGE", "yes")
+    assert parse_instruction("(LOOP)") == ("L", "LOOP", "")
 
 
 def init_symbol_table() -> dict[str, int]:
@@ -111,11 +119,10 @@ class Parser:
         insts = []
 
         for line in lines:
-            parts = line.strip().split("//")
-            command = parts[0].strip()
-            if not command:
+            parsed = parse_instruction(line)
+            if parsed is None:
                 continue
-            parsed = parse_instruction(command)
+
             opcode = parsed[0]
 
             cur_line_number = len(insts)
@@ -136,8 +143,8 @@ class Parser:
             opcode = instruction[0]
 
             if opcode == "A":
-                assert len(instruction) == 2
-                addr = instruction[1]
+                assert len(instruction) == 3
+                addr, comment = instruction[1:]
 
                 if isinstance(addr, str):
                     if addr in self.symbol_table:
@@ -147,14 +154,13 @@ class Parser:
                         addr = idx_next_symbol
                         idx_next_symbol += 1
 
-                    instruction = (opcode, addr)
+                    instruction = (opcode, addr, comment)
 
                 self.parsed_instructions.append(instruction)
 
             else:
                 assert opcode == "C"
-                assert len(instruction) == 4
-                dest, comp, jump = instruction[1:]
+                assert len(instruction) == 5
                 self.parsed_instructions.append(instruction)
 
 def parse(program: Sequence[str]) -> list[tuple[str,...]]:
@@ -294,7 +300,7 @@ class Compy386:
             self.register_a = addr
         else:
             assert opcode == "C"
-            dest, comp, jump = inst[1:]
+            dest, comp, jump, comment = inst[1:]
 
             if 0 <= self.register_a < len(self.ram):
                 register_m = self.ram[self.register_a]

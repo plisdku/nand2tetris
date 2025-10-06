@@ -2,6 +2,7 @@ import pytest
 from hackulator import Compy386
 from VMTranslator import translate
 
+@pytest.mark.parametrize(("x", "y"), [(0,0), (0,1), (1,0), (1,1), (-1,1)])
 def test_eq(x: int, y: int):
 
     vm_code = f"""
@@ -10,9 +11,9 @@ def test_eq(x: int, y: int):
         eq
     """
 
-    print(translate(vm_code))
+    # print(translate(vm_code))
     compy = Compy386(translate(vm_code))
-    compy.run(print_stack=True)
+    compy.run(print_stack=False, print_line=False, print_registers=False)
 
     assert compy.depth() == 1
 
@@ -21,11 +22,6 @@ def test_eq(x: int, y: int):
     else:
         assert not compy.peek()
 
-test_eq(0, 0)
-test_eq(0, 1)
-test_eq(1, 0)
-test_eq(1, 1)
-exit(0)
 
 def test_gt():
     pass

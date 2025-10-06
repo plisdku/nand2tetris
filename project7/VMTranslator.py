@@ -1,3 +1,4 @@
+import os
 import sys
 from typing import List
 
@@ -21,6 +22,8 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
 
     out_lines = []
 
+    label_count: dict[str,int] = dict(((k,0) for k in ("eq", "gt", "lt", "not", "and", "or", "add")))
+
     for line_number, line in enumerate(lines):
         # Remove extra whitespace
 
@@ -36,40 +39,50 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
             token = tokens[0]
             if token == "eq":
                 # Compare top two items on stack.
-
-                # Strategy: the top two elements on the stack are x and y.
-                # Equality means x-y == 0.
-                # That is, x+(-y) == 0.
                 #
-                # The truthy value is ~(x+(-y)).
-                # So calculate that somehow.
+                # Strategy stolen from StackTest.asm.
 
-                program = """
+                label = f"EQ_{label_count['eq']}"
+                label_count['eq'] += 1
+
+                program = f"""
                 @SP
-                A=M-1 // Point A to top element of stack
-                D=M   // Copy top of stack to D
-                A=A-1 // Point A to second element of stack
-                M=D-M // Store stack[0]-stack[1] on top of stack
-                M=!M  // M is True if stack[0] eq stack[1]
+                AM=M-1 // SP = SP - 1; A = SP - 1
+                D=M    // D = "y"
+                A=A-1  // point to "x"
+                D=M-D  // D = "x-y"
+                M=0    // top of stack = 0 in case x != y
+                @{label}
+                D;JNE  // if x != y, we're done; exit
                 @SP
-                M=M-1 // SP--
+                A=M-1  // point to new top of stack
+                M=-1   // top of stack = 0xFFFF because x=y
+                ({label})
                 """
+
                 out_lines.extend(program.splitlines())
             elif token == "gt":
                 # Compare top two items on stack
 
-                program = """
-                @SP
-                A=M-1 // Point A to stack[0]
-                D=M   // D = stack[0]
-                A=A-1 // Point A to stack[1]
-                D=D-M // Store stack[0]-stack[1] in D
+                label = f"GT_{label_count['gt']}"
+                label_count['gt'] += 1
 
-                // stack[1] > stack[0] if stack[0]-stack[1] is negative.
-                // check the sign bit? And that is???
+                program = f"""
+                @SP
+                AM=M-1  // SP = SP - 1; A = SP - 1 (top of stack)
+                D=M     // save D = "y"
+                A=A-1   // point to "x"
+                D=M-D   // D = "x - y"
+                M=0     // top of stack = 0 in case x <= y
+                @{label}
+                D;JLE   // we're done if x-y <= 0
+                @SP
+                A=M-1   // point to new top of stack
+                M=-1    // set top = 0xFFFF
+                ({label})
                 """
 
-
+                out_lines.extend(program.splitlines())
 
             elif token == "lt":
                 pass
@@ -99,7 +112,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
             if cmd == "push":
                 if segment == "constant":
                     program = f"""
-                        @{num}
+                        @{num} // {cmd} {segment} {num}
                         D=A
                     """
                 else:
@@ -131,15 +144,18 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                 assert segment in ("temp", "local", "this", "that", "arg")
                 segment_symbol = SEGMENT_VM_TO_HACK[segment]
 
+                program = f"""
+                    // {cmd} {segment} {num}
+                """
+
                 if segment == "temp":
                     # we'll directly write into RAM[temp + num],
                     # i.e. *(&temp + num).
 
                     assert segment_symbol == "5"
 
-                    program = f"""
-                        // Set write address to 5 + num and save to D
-                        @{num}
+                    program += f"""
+                        @{num} // Set write address to 5 + num and save to D
                         D=A
                         @{segment_symbol}
                         D=D+A // sole difference between temp and other segments
@@ -148,9 +164,8 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                     # we'll write into RAM[RAM[sp] + num],
                     # i.e. *(sp + num)
 
-                    program = f"""
-                        // Set write address to segment_ptr + num and save to D
-                        @{num}
+                    program += f"""
+                        @{num} // Set write address to segment_ptr + num and save to D
                         D=A
                         @{segment_symbol}
                         D=D+M
@@ -158,14 +173,12 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
 
                 # Write address is in D. Save to R13
                 program += """
-                    // Save write address to R13
-                    @R13
+                    @R13 // Save write address to R13
                     M=D
                 """
 
                 program += """
-                    // Decrement stack pointer and save top of stack to R13
-                    @SP
+                    @SP // Decrement stack pointer and save top of stack to R13
                     M=M-1
                     A=M
                     D=M
@@ -204,7 +217,12 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         raise Exception("Usage: VMTranslator <filename>")
 
-    translate(open(sys.argv[1]).read())
+    hack_code = translate(open(sys.argv[1]).read())
+
+    print(hack_code)
+
+    with open(os.path.splitext(sys.argv[1])[0] + ".asm") as fh:
+        fh.write(hack_code)
 
 
 # Some example lines:
