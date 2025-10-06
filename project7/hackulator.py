@@ -210,7 +210,7 @@ def compute(comp: str, dd: int, aa: int, mm: int) -> int:
         tmp = (aa + 0xFFFF)
     elif comp == "M-1":
         tmp = (mm + 0xFFFF)
-    elif comp == "D+A":
+    elif comp == "D+A" or comp == "A+D":
         tmp = (aa + dd)
     elif comp == "D+M" or comp == "M+D":
         tmp = (dd + mm)
@@ -428,25 +428,19 @@ if __name__ == "__main__":
     args = p.parse_args()
 
     with open(args.file) as fh:
-        lines = fh.readlines()
-
-    # parser = Parser()
-    # parser.parse(lines)
+        hack_program = fh.read()
 
     # Execute the program
 
-    compy = Compy386("\n".join(lines))
-
-    for step in range(100):
-        print(step, compy.pc, ":", compy.parsed_instructions[compy.pc])
-        compy.step()
-        print("a:", compy.register_a)
-        print("d:", compy.register_d)
-        print("pc:", compy.pc)
-        print("m:", compy.ram[compy.register_a])
+    compy = Compy386(hack_program)
+    compy.run(max_steps=191, print_line=False, print_registers=False)
 
     print("DONE")
+
     print(compy.ram[:30])
+    # for ii, val in enumerate(compy.ram[:30]):
+    #     print(f"{ii:04d}: {val}")
+
 
 
 

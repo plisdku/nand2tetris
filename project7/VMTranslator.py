@@ -203,8 +203,8 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
                         D=A
                         @{num}
                         D=D+A
-                        @R13
-                        M=D // save write addr in R13
+                        @R15
+                        M=D // save write addr in R15
 
                         // Pop from stack
                         @SP
@@ -212,7 +212,7 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
                         D=M     // D = value at top
 
                         // Write to saved location
-                        @R13
+                        @R15
                         A=M
                         M=D
                     """
@@ -225,14 +225,14 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
                     program = f"""
                         @{seg} // Save the write address
                         D=A
-                        @R14
-                        M=D // save write addr in R14
+                        @R15
+                        M=D // save write addr in R15
 
                         @SP     // Pop from stack
                         AM=M-1  // SP = SP-1, A = addr of top
                         D=M     // D = value at top
 
-                        @R14    // Write to saved location
+                        @R15    // Write to saved location
                         A=M
                         M=D
                     """
@@ -251,14 +251,21 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
                     """
                 else:
                     segment_symbol = SEGMENT_VM_TO_HACK[segment]
+
+                    # I used this first
+                    # @{segment_symbol}
+                    # D=M
+                    # @{num}
+                    # D=D+A
+
                     program = f"""
                         // Save the write address
-                        @{segment_symbol}
-                        D=M
                         @{num}
-                        D=D+A
-                        @R13
-                        M=D // save write addr in R13
+                        D=A
+                        @{segment_symbol}
+                        D=M+D
+                        @R15
+                        M=D // save write addr in R15
 
                         // Pop from stack
                         @SP
@@ -266,7 +273,7 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
                         D=M    // D = value at top of stack
 
                         // Write to saved location
-                        @R13
+                        @R15
                         A=M
                         M=D
                     """
@@ -296,15 +303,26 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        raise Exception("Usage: VMTranslator <filename>")
+    print("Welcome to translator.")
+    print("Args:")
+    print(sys.argv)
 
-    hack_code = translate(open(sys.argv[1]).read())
+    try:
+        if len(sys.argv) < 2:
+            raise Exception("Usage: VMTranslator <filename>")
 
-    arg = os.path.basename(sys.argv[1])
+        hack_code = translate(open(sys.argv[1]).read())
 
-    with open(os.path.splitext(arg)[0] + ".asm", "w") as fh:
-        fh.write(hack_code)
+        arg = os.path.abspath(sys.argv[1])
+
+        with open(os.path.splitext(arg)[0] + ".asm", "w") as fh:
+            fh.write(hack_code)
+
+        print("Translation succeded.")
+        print(hack_code)
+    except Exception as exc:
+        print(exc)
+
 
 
 # Some example lines:
