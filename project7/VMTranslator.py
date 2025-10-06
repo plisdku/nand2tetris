@@ -13,11 +13,17 @@ SEGMENT_VM_TO_HACK = {
     "arg": "ARG"
 }
 
-def translate(lines: List[str]) -> List[str]:
+def translate(program: str) -> str: #lines: List[str]) -> List[str]:
+    """
+    Translate lines of VM code into Hack assembly.
+    """
+    lines = [line.strip() for line in program.splitlines()]
 
     out_lines = []
 
     for line_number, line in enumerate(lines):
+        # Remove extra whitespace
+
         # Discard comment if any
         idx_comment = line.find("//")
         if idx_comment != -1:
@@ -81,6 +87,7 @@ def translate(lines: List[str]) -> List[str]:
                 parsing_error(line_number, line)
         elif len(tokens) == 3:
             cmd, segment, num = tokens
+            num = int(num) & 0xFFFF
 
             if cmd == "push":
                 if segment == "constant":
@@ -107,6 +114,8 @@ def translate(lines: List[str]) -> List[str]:
                     @SP
                     M=M+1
                 """
+
+                out_lines.extend(program.splitlines())
 
             elif cmd == "pop":
                 # Write top of stack into a memory location.
@@ -156,6 +165,9 @@ def translate(lines: List[str]) -> List[str]:
                     A=M
                     M=D
                 """
+
+                out_lines.extend(program.splitlines())
+
             elif cmd == "label":
                 pass
             elif cmd == "goto":
@@ -175,7 +187,7 @@ def translate(lines: List[str]) -> List[str]:
         else:
             parsing_error(line_number, line)
 
-    return out_lines
+    return "\n".join([line.strip() for line in out_lines])
 
 
 if __name__ == "__main__":
@@ -184,7 +196,7 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         raise Exception("Usage: VMTranslator <filename>")
 
-    translate(open(sys.argv[1]).readlines())
+    translate(open(sys.argv[1]).read())
 
 
 # Some example lines:

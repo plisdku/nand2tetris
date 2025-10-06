@@ -232,11 +232,14 @@ def compute(comp: str, dd: int, aa: int, mm: int) -> int:
 
 class Compy386:
 
-    def __init__(self, program: str):
+    def __init__(self, program: str = "", init_sp: bool = True):
         self.register_d: int = 0
         self.register_a: int = 0
         self.ram: list[int] = [0]*(2**15)
         self.pc: int = 0
+
+        if init_sp:
+            program = self.init_memory_segments_mapping() + "\n" + program
 
         parser = Parser()
         parser.parse(program.splitlines())
@@ -245,11 +248,44 @@ class Compy386:
 
         self.stack_ptr: int = 256 # address of bottom of stack
 
-    def step(self):
+
+    @classmethod
+    def init_memory_segments_mapping(cls) -> str:
+        """
+        Program to set stack pointer to 256.
+
+        Other memory segments are set by function calls and such.
+        """
+
+        program = """
+        // Set SP to 256
+        @256
+        D=A
+        @SP
+        M=D
+        """
+
+        return program
+
+    def run(self, max_steps: int = 1000, print_line: bool = False, print_registers: bool = False):
+        """
+        Call step() until the pc is past the length of the program.
+        """
+
+        for s in range(max_steps):
+            if self.pc >= len(self.parsed_instructions):
+                break
+            self.step(print_line, print_registers)
+
+    def step(self, print_line: bool = False, print_registers: bool = False):
         """
         Execute one hack instruction and update the program counter.
         """
         inst = self.parsed_instructions[self.pc]
+
+        if print_line:
+            print(f"{self.pc}: {inst}")
+
         self.pc += 1
 
         if (opcode := inst[0]) == "A":
@@ -260,7 +296,12 @@ class Compy386:
             assert opcode == "C"
             dest, comp, jump = inst[1:]
 
-            result = compute(comp, self.register_d, self.register_a, self.ram[self.register_a])
+            if 0 <= self.register_a < len(self.ram):
+                register_m = self.ram[self.register_a]
+            else:
+                register_m = 0
+                assert "M" not in comp
+            result = compute(comp, self.register_d, self.register_a, register_m)
             if dest is None:
                 pass
             else:
@@ -283,12 +324,23 @@ class Compy386:
                 (jump == "JMP")):
                 self.pc = self.register_a
 
+        if print_registers:
+            print("  a:", self.register_a)
+            print("  m:", self.ram[self.register_a])
+            print("  d:", self.register_d)
+
     @property
     def sp(self) -> int:
+        """
+        Get the stack pointer. It should be 256 when the stack is empty.
+        """
         return self.ram[self.symbol_table["SP"]]
 
     @sp.setter
     def sp(self, value: int):
+        """
+        Set the stack pointer. It should be 256 when the stack is empty.
+        """
         self.ram[self.symbol_table["SP"]] = value
 
     def push(self, value: int):
