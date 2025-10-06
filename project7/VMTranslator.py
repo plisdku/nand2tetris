@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import List
+from typing import List, Literal
 
 
 def parsing_error(line_number: int, line: str):
@@ -35,57 +35,44 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
         # Split into tokens. Expect one or three.
         tokens = line.split()
 
+        def _compare(token: Literal["eq", "gt", "lt"], jump: Literal["JNE", "JLE", "JGE"] ):
+            """
+            Hack implementation for "eq", "gt" and "lt".
+            """
+            label = f"{token}_{label_count[token]}"
+            label_count[token] += 1
+
+            # Compare top two items on stack.
+            #
+            # Strategy stolen from StackTest.asm.
+            
+            program = f"""
+            @SP
+            AM=M-1 // SP = SP - 1; A = SP - 1
+            D=M    // D = "y"
+            A=A-1  // point to "x"
+            D=M-D  // D = "x-y"
+            M=0    // top of stack = 0 in case
+            @{label}
+            D;{jump}  // if we're done, exit
+            @SP
+            A=M-1  // point to new top of stack
+            M=-1   // top of stack = 0xFFFF
+            ({label})
+            """
+            return program
+
         if len(tokens) == 1:
             token = tokens[0]
             if token == "eq":
-                # Compare top two items on stack.
-                #
-                # Strategy stolen from StackTest.asm.
-
-                label = f"EQ_{label_count['eq']}"
-                label_count['eq'] += 1
-
-                program = f"""
-                @SP
-                AM=M-1 // SP = SP - 1; A = SP - 1
-                D=M    // D = "y"
-                A=A-1  // point to "x"
-                D=M-D  // D = "x-y"
-                M=0    // top of stack = 0 in case x != y
-                @{label}
-                D;JNE  // if x != y, we're done; exit
-                @SP
-                A=M-1  // point to new top of stack
-                M=-1   // top of stack = 0xFFFF because x=y
-                ({label})
-                """
-
+                program = _compare("eq", "JNE")
                 out_lines.extend(program.splitlines())
             elif token == "gt":
-                # Compare top two items on stack
-
-                label = f"GT_{label_count['gt']}"
-                label_count['gt'] += 1
-
-                program = f"""
-                @SP
-                AM=M-1  // SP = SP - 1; A = SP - 1 (top of stack)
-                D=M     // save D = "y"
-                A=A-1   // point to "x"
-                D=M-D   // D = "x - y"
-                M=0     // top of stack = 0 in case x <= y
-                @{label}
-                D;JLE   // we're done if x-y <= 0
-                @SP
-                A=M-1   // point to new top of stack
-                M=-1    // set top = 0xFFFF
-                ({label})
-                """
-
+                program = _compare("gt", "JLE")
                 out_lines.extend(program.splitlines())
-
             elif token == "lt":
-                pass
+                program = _compare("lt", "JGE")
+                out_lines.extend(program.splitlines())
             elif token == "not":
                 pass
             elif token == "and":
