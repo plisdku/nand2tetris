@@ -225,7 +225,9 @@ if __name__ == "__main__":
 
     print(hack_code)
 
-    with open(os.path.splitext(sys.argv[1])[0] + ".asm") as fh:
+    arg = os.path.basename(sys.argv[1])
+
+    with open(os.path.splitext(arg)[0] + ".asm", "w") as fh:
         fh.write(hack_code)
 
 
