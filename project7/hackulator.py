@@ -391,7 +391,7 @@ class Compy386:
 
     def pop(self) -> int:
         self.sp -= 1
-        return self.ram[self.sp + 1]
+        return self.ram[self.sp]
 
     def peek(self, depth: int = 0) -> int:
         """

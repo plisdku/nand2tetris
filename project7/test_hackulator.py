@@ -35,9 +35,6 @@ def test_push_pop():
     compy = Compy386()
     compy.run()
 
-    print(compy.stack_ptr)
-    print(compy.sp)
-
     assert compy.depth() == 0
     compy.push(1)
     assert compy.depth() == 1
@@ -45,6 +42,13 @@ def test_push_pop():
     assert compy.depth() == 2
     compy.push(3)
     assert compy.depth() == 3
+
+    assert compy.pop() == 3
+    assert compy.depth() == 2
+    assert compy.pop() == -2
+    assert compy.depth() == 1
+    assert compy.pop() == 1
+    assert compy.depth() == 0
 
 
 
