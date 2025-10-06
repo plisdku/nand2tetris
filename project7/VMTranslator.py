@@ -83,7 +83,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
             elif token == "and":
                 program = f"""
                 @SP
-                AM=A-1  // SP = SP-1; A = SP-1 (top of stack)
+                AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
                 D=M     // D = "y"
                 A=A-1
                 M=D&M   // new top of stack = x and y
@@ -92,7 +92,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
             elif token == "or":
                 program = f"""
                 @SP
-                AM=A-1  // SP = SP-1; A = SP-1 (top of stack)
+                AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
                 D=M     // D = "y"
                 A=A-1   // point to "x"
                 M=D|M   // new top of stack = x or y
@@ -101,7 +101,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
             elif token == "add":
                 program = f"""
                 @SP
-                AM=A-1  // SP = SP-1; A = SP-1 (top of stack)
+                AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
                 D=M     // D = "y"
                 A=A-1   // point to "x"
                 M=M+D   // new top of stack = x+y

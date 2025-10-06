@@ -101,8 +101,19 @@ def test_not(x: int):
 
     assert compy.peek() == (~x) & 0xFFFF
 
-def test_and():
-    pass
+@pytest.mark.parametrize(("x", "y"), [(0,0), (1,0), (0,1), (2, 32), (-2, -1)])
+def test_and(x: int, y: int):
+
+    vm_code = f"""
+        push constant {x}
+        push constant {y}
+        and
+    """
+    compy = Compy386(translate(vm_code))
+    compy.run(print_line=False, print_registers=False, print_stack=False)
+    assert compy.depth() == 1
+    assert compy.peek() == (x&y) & 0xFFFF
+
 
 def test_or():
     pass
