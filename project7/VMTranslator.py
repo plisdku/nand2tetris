@@ -8,6 +8,7 @@ def parsing_error(line_number: int, line: str):
 
 SEGMENT_VM_TO_HACK = {
     "temp": "5",
+    "pointer": "THIS",
     "local": "LCL",
     "this": "THIS",
     "that": "THAT",
@@ -133,7 +134,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
             num = int(num) & 0xFFFF
 
             if cmd == "push":
-                
+
                 # Set D to the value we want to push onto the stack.
 
                 if segment == "constant":
@@ -153,6 +154,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                     """
                 else:
                     assert segment in ("temp", "local", "this", "that", "argument"), f"{segment}"
+
                     segment_symbol = SEGMENT_VM_TO_HACK[segment]
 
                     program = f"""
@@ -165,7 +167,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                     """
 
                 program += """
-                    @SP
+                    @SP // push D onto the stack
                     A=M
                     M=D
                     @SP
@@ -175,53 +177,47 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                 out_lines.extend(program.splitlines())
 
             elif cmd == "pop":
-                # Write top of stack into a memory location.
+                # Write top of stack into a memory location (segment base + offset)
 
-                assert segment in ("temp", "local", "this", "that", "argument"), f"{segment}"
+                assert segment in ("temp", "local", "this", "that", "pointer", "argument"), f"{segment}"
+
                 segment_symbol = SEGMENT_VM_TO_HACK[segment]
 
-                program = f"""
-                    // {cmd} {segment} {num}
-                """
-
                 if segment == "temp":
-                    # we'll directly write into RAM[temp + num],
-                    # i.e. *(&temp + num).
+                    # Write directly into RAM[temp+num]
+                    assert segment_symbol == "5"
 
-                    assert segment_symbol == "5", f"{segment_symbol}"
-
-                    program += f"""
-                        @{num} // Set write address to 5 + num and save to D
-                        D=A
-                        @{segment_symbol}
-                        D=D+A // sole difference between temp and other segments
+                    program = f"""
+                    @SP
+                    AM=M-1  // SP = SP-1, A = addr of top
+                    D=M     // D = value at top
+                    @R15
+                    M=D     // save the popped value
+                    @{num}
+                    D=A     // D = offset
+                    @{segment_symbol}
+                    A=D+A   // A = address to write to
                     """
                 else:
-                    # we'll write into RAM[RAM[sp] + num],
-                    # i.e. *(sp + num)
-
-                    program += f"""
-                        @{num} // Set write address to segment_ptr + num and save to D
-                        D=A
+                    program = f"""
+                        // Save the write address
                         @{segment_symbol}
-                        D=M+D
+                        D=M
+                        @{num}
+                        D=D+A
+                        @R13
+                        M=D // save write addr in R13
+
+                        // Pop from stack
+                        @SP
+                        AM=M-1 // SP = SP-1; A points to top of stack
+                        D=M    // D = value at top of stack
+
+                        // Write to saved location
+                        @R13
+                        A=M
+                        M=D
                     """
-
-                # Write address is in D. Save to R13
-                program += """
-                    @R13 // Save write address to R13
-                    M=D
-                """
-
-                program += """
-                    @SP // Decrement stack pointer and save top of stack to R13
-                    M=M-1
-                    A=M
-                    D=M
-                    @R13
-                    A=M
-                    M=D
-                """
 
                 out_lines.extend(program.splitlines())
 
