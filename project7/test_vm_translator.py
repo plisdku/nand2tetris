@@ -47,9 +47,25 @@ def test_multi_eq():
 
     assert compy.get_stack() == [0xFFFF, 0, 0, 0xFFFF]
 
+@pytest.mark.parametrize(("x", "y"), [(0,0), (0,1), (1,0), (1,1), (-1,1)])
+def test_gt(x: int, y: int):
 
-def test_gt():
-    pass
+    vm_code = f"""
+        push constant {x}
+        push constant {y}
+        gt
+    """
+
+    compy = Compy386(translate(vm_code))
+    compy.run()
+    assert compy.depth() == 1
+
+    print(f"{x} > {y}: {compy.peek()}")
+
+    if x > y:
+        assert compy.peek()
+    else:
+        assert not compy.peek()
 
 def test_lt():
     pass
