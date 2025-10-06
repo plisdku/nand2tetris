@@ -11,7 +11,7 @@ SEGMENT_VM_TO_HACK = {
     "local": "LCL",
     "this": "THIS",
     "that": "THAT",
-    "arg": "ARG"
+    "argument": "ARG"
 }
 
 def translate(program: str) -> str: #lines: List[str]) -> List[str]:
@@ -111,7 +111,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                 AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
                 D=M     // D = "y"
                 A=A-1   // point to "x"
-                M=D+M   // new top of stack = x+y
+                M=M+D   // new top of stack = x+y
                 """
                 out_lines.extend(program.splitlines())
             elif token == "sub":
@@ -136,7 +136,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                         D=A
                     """
                 else:
-                    assert segment in ("temp", "local", "this", "that", "arg")
+                    assert segment in ("temp", "local", "this", "that", "argument")
                     segment_symbol = SEGMENT_VM_TO_HACK[segment]
 
                     program = f"""
@@ -161,7 +161,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
             elif cmd == "pop":
                 # Write top of stack into a memory location.
 
-                assert segment in ("temp", "local", "this", "that", "arg")
+                assert segment in ("temp", "local", "this", "that", "argument")
                 segment_symbol = SEGMENT_VM_TO_HACK[segment]
 
                 program = f"""
@@ -188,7 +188,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                         @{num} // Set write address to segment_ptr + num and save to D
                         D=A
                         @{segment_symbol}
-                        D=D+M
+                        D=M+D
                     """
 
                 # Write address is in D. Save to R13

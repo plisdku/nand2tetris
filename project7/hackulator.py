@@ -211,7 +211,7 @@ def compute(comp: str, dd: int, aa: int, mm: int) -> int:
         tmp = (mm + 0xFFFF)
     elif comp == "D+A":
         tmp = (aa + dd)
-    elif comp == "D+M":
+    elif comp == "D+M" or comp == "M+D":
         tmp = (dd + mm)
     elif comp == "D-A":
         tmp = (dd - aa)
