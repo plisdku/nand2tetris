@@ -78,8 +78,6 @@ def test_run_max():
 
         assert compy.ram[2] == max(x, y)
 
-test_run_max()
-
 
 def test_noop():
     """
@@ -99,6 +97,25 @@ def test_noop():
 
     for r1, r2 in zip(compy.ram, compy2.ram):
         assert r1 == r2
+
+
+@pytest.mark.parametrize(
+    "segment, base_addr", [("LCL", 40), ("THIS", 50), ("THAT", 60), ("ARG", 70)]
+)
+def test_get_set_segment_base(segment: str, base_addr: int):
+    compy = hackulator.Compy386()
+    compy.set_segment_base(segment, base_addr)
+    assert compy.segment_base(segment) == base_addr
+
+@pytest.mark.parametrize(
+    "segment, base_addr, offset, value",
+    [("LCL", 100, 10, 1), ("THIS", 200, 20, -2), ("THAT", 300, 30, -3), ("ARG", 400, 0, 4)]
+)
+def test_get_set_segment(segment: str, base_addr: int, offset: int, value: int):
+    compy = hackulator.Compy386()
+    compy.set_segment_base(segment, base_addr)
+    compy.set_in_segment(segment, offset, value & 0xFFFF)
+    assert compy.get_in_segment(segment, offset) == value & 0xFFFF
 
 
 @pytest.mark.parametrize(
@@ -144,16 +161,41 @@ def test_jumps(jump_command: str, does_goto_dest: bool):
     else:
         assert compy.pc == 2
 
-test_jumps("1;JGT", True)
-
 
 _COMMANDS = [
-    "0","1","-1","D","A","M","!D","!M","!A","-D","-A","-M",
-    "D+1","A+1","M+1","D-1","A-1","M-1","D+A","D+M","D-A","D-M",
-    "A-D","M-D","D&A","D&M","D|A","D|M",
+    "0",
+    "1",
+    "-1",
+    "D",
+    "A",
+    "M",
+    "!D",
+    "!M",
+    "!A",
+    "-D",
+    "-A",
+    "-M",
+    "D+1",
+    "A+1",
+    "M+1",
+    "D-1",
+    "A-1",
+    "M-1",
+    "D+A",
+    "D+M",
+    "D-A",
+    "D-M",
+    "A-D",
+    "M-D",
+    "D&A",
+    "D&M",
+    "D|A",
+    "D|M",
 ]
 _DESTS = ["M", "D", "A"]
 _TESTS = list(itertools.product(_DESTS, _COMMANDS))
+
+
 @pytest.mark.parametrize("dest, command", _TESTS)
 def test_comps(dest, command):
     """

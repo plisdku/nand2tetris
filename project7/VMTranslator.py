@@ -103,6 +103,7 @@ def translate(program: str) -> str: #lines: List[str]) -> List[str]:
                         @{num}
                         D=A
                         @{segment_symbol}
+                        A=M
                         A=D+A
                         D=M
                     """

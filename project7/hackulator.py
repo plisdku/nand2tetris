@@ -1,6 +1,6 @@
 import argparse
 import sys
-from typing import NamedTuple, Sequence
+from typing import Literal, NamedTuple, Sequence
 import dataclasses
 
 # Commands:
@@ -248,7 +248,6 @@ class Compy386:
 
         self.stack_ptr: int = 256 # address of bottom of stack
 
-
     @classmethod
     def init_memory_segments_mapping(cls) -> str:
         """
@@ -328,6 +327,51 @@ class Compy386:
             print("  a:", self.register_a)
             print("  m:", self.ram[self.register_a])
             print("  d:", self.register_d)
+
+    def set_segment_base(self, segment: Literal["LCL", "ARG", "THIS", "THAT"], base_addr: int):
+        segment = segment.upper()
+        assert segment in ("LCL", "ARG", "THIS", "THAT")
+        self.ram[self.symbol_table[segment]] = base_addr
+
+    
+    def get_stack(self) -> list[int]:
+        return self.ram[self.stack_ptr:self.ram[self.symbol_table["SP"]]]
+
+    def segment_base(self, segment: Literal["LCL", "ARG", "THIS", "THAT", "TEMP"]) -> int:
+        """
+        Get the base address for a given memory segment.
+
+        Args:
+            segment: LCL, ARG, THIS, THAT or TEMP
+
+        Base addresses reside at fixed offsets in the RAM:
+            0: SP
+            1: LCL
+            2: ARG
+            3: THIS
+            4: THAT
+
+        and the TEMP segment is always words 5-12 (the offset cannot be changed).
+        """
+        assert segment in ("LCL", "ARG", "THIS", "THAT", "TEMP")
+        if segment == "TEMP":
+            idx = self.symbol_table["TEMP"]
+        else:
+            idx = self.ram[self.symbol_table[segment]]
+
+        assert 0 <= idx < len(self.ram)
+
+        return idx
+
+
+    def get_in_segment(self, segment: Literal["LCL", "ARG", "THIS", "THAT", "TEMP"], addr: int) -> int:
+        assert segment in ("LCL", "ARG", "THIS", "THAT", "TEMP")
+        return self.ram[self.segment_base(segment) + addr]
+
+    def set_in_segment(self, segment: Literal["LCL", "ARG", "THIS", "THAT", "TEMP"], addr: int, value: int):
+        assert segment in ("LCL", "ARG", "THIS", "THAT", "TEMP")
+        self.ram[self.segment_base(segment) + addr] = value
+
 
     @property
     def sp(self) -> int:

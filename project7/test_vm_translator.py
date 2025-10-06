@@ -1,4 +1,4 @@
-from os import initgroups
+import pytest
 from hackulator import Compy386
 from VMTranslator import translate
 
@@ -45,23 +45,53 @@ def test_init_stack():
     assert compy.sp == 256
 
 def test_push_constant():
-    # Initialize SP = 256.
-    # Write something to an offset at each segment
-    # and push it to the stack.
-
     vm_program = """
-    push constant -1
-    push constant 0
-    push constant 1
+        push constant -1
+        push constant 0
+        push constant 1
     """
 
     compy = Compy386(translate(vm_program))
-    compy.run() #print_line=True)
+    compy.run(print_line=False)
 
     assert compy.depth() == 2
     assert compy.peek() == 1
     assert compy.peek(1) == 0
     assert compy.peek(2) == (-1 & 0xFFFF)
+
+
+@pytest.mark.parametrize(("segment_vm", "segment_hack"),
+    [("local", "LCL"), ("this", "THIS"), ("that", "THAT"), ("arg", "ARG"), ("temp", "TEMP")]
+)
+def test_push(segment_vm: str, segment_hack: str):
+
+    segment_vm = "local"
+    segment_hack = "LCL"
+
+    # Note that we're pushing OUT OF ORDER.
+    # Just making it a little harder to be right by accident alone.
+
+    vm_program = f"""
+        push {segment_vm} 0
+        push {segment_vm} 2
+        push {segment_vm} 1
+    """
+
+    compy = Compy386(translate(vm_program))
+    compy.set_segment_base(segment_hack, 1000)
+    compy.set_in_segment(segment_hack, 0, 10)
+    compy.set_in_segment(segment_hack, 1, -11 & 0xFFFF)
+    compy.set_in_segment(segment_hack, 2, 12)
+    compy.run(print_line=False, print_registers=False)
+
+    assert compy.get_stack() == [10, 12, -11 & 0xFFFF]
+
+    assert compy.depth() == 2
+    assert compy.peek() == -11 & 0xFFFF
+    assert compy.peek(1) == 12
+    assert compy.peek(2) == 10
+
+
 
 def test_pop():
     pass
