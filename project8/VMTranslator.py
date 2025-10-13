@@ -27,7 +27,23 @@ def remove_comments(program: str) -> str:
     out_lines = [line.split("//")[0] for line in program.splitlines()]
     return "\n".join(out_lines)
 
+def remove_whitespace(program: str) -> str:
+    """
+    Remove leading and trailing whitespace from each line, and remove empty lines.
+    """
+
+    out_lines = []
+
+    for line in program.splitlines():
+        stript = line.strip()
+        if stript:
+            out_lines.append(stript)
+    return "\n".join(out_lines)
+
 def strip(func: Callable):
+    """
+    Decorator to remove leading and trailing whitespace from output of function.
+    """
     @wraps(func)
     def f(*args, **kwargs) -> str:
         gross_str = func(*args, **kwargs)

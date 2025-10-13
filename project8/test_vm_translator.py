@@ -1,7 +1,7 @@
 from typing import Callable, Literal
 import pytest
 from hackulator import Compy386
-from VMTranslator import remove_comments, translate
+from VMTranslator import remove_comments, remove_whitespace, translate
 from operator import and_, neg, or_, add, sub, not_, invert
 
 
@@ -311,12 +311,33 @@ def test_strip_comments():
 
     assert remove_comments(program) == expected
 
+def test_remove_whitespace():
+
+    # Note that there is some trailing whitespace here
+    program = """
+
+    a = 3
+    b = 4       
+
+    """
+
+    stript = remove_whitespace(program)
+
+    expected = "a = 3\nb = 4"
+    assert stript == expected
+
 
 def test_write_label():
 
     vm_program = f"""
         label A
-        push 0
+        push constant 0
         label B
     """
+
+    # The first and last lines of the compiled program should be labels.
+
+    hack_program = translate(vm_program, "default")
+    lines = hack_program.splitlines()
+
 
