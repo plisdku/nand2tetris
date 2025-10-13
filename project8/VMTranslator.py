@@ -43,11 +43,11 @@ def translate(program: str, namespace: str = "default") -> str:
         # Split into tokens. Expect one or three.
         tokens = line.split()
 
-        def _compare(token: Literal["eq", "gt", "lt"], jump: Literal["JNE", "JLE", "JGE"] ):
+        def _compare(token: Literal["eq", "gt", "lt"], jump: Literal["JNE", "JLE", "JGE"], label_count: dict[str,int]):
             """
             Hack implementation for "eq", "gt" and "lt".
             """
-            label = f"{token}_{label_count[token]}"
+            label = f"{token}_{label_count.setdefault(token, 0)}"
             label_count[token] += 1
 
             # Compare top two items on stack.
@@ -74,13 +74,13 @@ def translate(program: str, namespace: str = "default") -> str:
         if len(tokens) == 1:
             token = tokens[0]
             if token == "eq":
-                program = _compare("eq", "JNE")
+                program = _compare("eq", "JNE", label_count)
                 out_lines.extend(program.splitlines())
             elif token == "gt":
-                program = _compare("gt", "JLE")
+                program = _compare("gt", "JLE", label_count)
                 out_lines.extend(program.splitlines())
             elif token == "lt":
-                program = _compare("lt", "JGE")
+                program = _compare("lt", "JGE", label_count)
                 out_lines.extend(program.splitlines())
             elif token == "not":
                 program = f"""
