@@ -47,6 +47,211 @@ def write_cmp(token: Literal["eq", "gt", "lt"], jump: Literal["JNE", "JLE", "JGE
     return program
 
 
+def write_not():
+    program = f"""
+    // not
+    @SP
+    A=M-1  // point to top of stack
+    M=!M   // logical negate
+    """
+    return program
+
+def write_neg():
+    program = f"""
+    // neg
+    @SP
+    A=M-1  // point to top of stack
+    M=-M   // arithmetic negate
+    """
+    return program
+
+def write_and():
+    program = f"""
+    // and
+    @SP
+    AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
+    D=M     // D = "y"
+    A=A-1
+    M=D&M   // new top of stack = x and y
+    """
+    return program
+
+def write_or():
+    program = f"""
+    // or
+    @SP
+    AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
+    D=M     // D = "y"
+    A=A-1   // point to "x"
+    M=D|M   // new top of stack = x or y
+    """
+    return program
+
+def write_add():
+    program = f"""
+    // add
+    @SP
+    AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
+    D=M     // D = "y"
+    A=A-1   // point to "x"
+    M=D+M   // new top of stack = x+y
+    """
+    return program
+
+def write_sub():
+    program = f"""
+    // sub
+    @SP
+    AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
+    D=M     // D = "y"
+    A=A-1   // point to "x"
+    M=M-D   // new top of stack = x+y
+    """
+    return program
+
+
+def write_push(cmd: str, segment: str, num_str: str, namespace: str) -> str:
+    # Set D to the value we want to push onto the stack.
+
+    num = int(num_str) & 0xFFFF
+
+    program = f"// push {cmd} {segment} {num_str}\n// namespace: {namespace}"
+
+    if segment == "constant":
+        program += f"""
+            @{num} // {cmd} {segment} {num}
+            D=A
+        """
+    elif segment == "temp":
+        actual_num = num + 5
+        program += f"""
+            @{actual_num} // @TEMP + num
+            D=M
+        """
+    elif segment == "pointer":
+        # Push the THIS or THAT pointer onto the stack.
+        assert num in (0, 1), f"num ({num}) is not what I expected"
+
+        segment_symbol = "THIS" if num == 0 else "THAT"
+
+        program += f"""
+            @{segment_symbol}
+            D=M
+        """
+    elif segment == "static":
+        # Push Static.i onto the stack
+
+        static_var = f"{namespace}.{num}"
+
+        program += f"""
+            @{static_var}
+            D=M // copy value of {static_var} into D
+        """
+    else:
+        assert segment in ("local", "this", "that", "argument"), f"{segment}"
+
+        segment_symbol = SEGMENT_VM_TO_HACK[segment]
+
+        program += f"""
+            @{num}
+            D=A
+            @{segment_symbol}
+            A=D+M
+            D=M
+        """
+
+    program += """
+        @SP // push D onto the stack
+        A=M
+        M=D
+        @SP
+        M=M+1
+    """
+    return program
+
+
+def write_pop(cmd: str, segment: str, num_str: str, namespace: str) -> str:
+    # Write top of stack into a memory location (segment base + offset)
+
+    num = int(num_str) & 0xFFFF
+
+    assert segment in ("temp", "local", "this", "that", "pointer", "argument", "static"), f"{segment}"
+
+    program = f"// pop {cmd} {segment} {num_str}\n// namespace: {namespace}"
+
+    if segment == "temp":
+        # Write directly into RAM[temp+num]
+        segment_symbol = SEGMENT_VM_TO_HACK[segment]
+        assert segment_symbol == "5"
+
+        actual_num = num + 5
+        program += f"""
+            // Pop from stack
+            @SP
+            AM=M-1  // SP = SP-1, A = addr of top
+            D=M     // D = value at top
+
+            // Write to saved location
+            @{actual_num}
+            M=D
+        """
+    elif segment == "pointer":
+        # Write to RAM[THIS] or RAM[THAT]
+
+        assert num in (0, 1), f"num = {num} unexpected for pointer"
+        seg = "THIS" if num == 0 else "THAT"
+
+        program += f"""
+            @{seg} // Save the write address
+            D=A
+            @R15
+            M=D // save write addr in R15
+
+            @SP     // Pop from stack
+            AM=M-1  // SP = SP-1, A = addr of top
+            D=M     // D = value at top
+
+            @R15    // Write to saved location
+            A=M
+            M=D
+        """
+    elif segment == "static":
+        # Pop from Static.{num}
+
+        static_var = f"{namespace}.{num}"
+
+        program += f"""
+            @SP    // pop from stack
+            AM=M-1 // SP = SP-1, A = addr of top
+            D=M    // D = value at top
+
+            @{static_var} // write to static var
+            M=D
+        """
+    else:
+        segment_symbol = SEGMENT_VM_TO_HACK[segment]
+
+        program += f"""
+            // Save the write address
+            @{num}
+            D=A
+            @{segment_symbol}
+            D=D+M
+            @R15
+            M=D // save write addr in R15
+
+            // Pop from stack
+            @SP
+            AM=M-1 // SP = SP-1; A points to top of stack
+            D=M    // D = value at top of stack
+
+            // Write to saved location
+            @R15
+            A=M
+            M=D
+        """
+    return program
+
 
 def translate(program: str, namespace: str = "default") -> str:
     """
@@ -73,241 +278,51 @@ def translate(program: str, namespace: str = "default") -> str:
 
         # Split into tokens. Expect one or three.
         tokens = line.split()
+        if not tokens:
+            continue
+
+        cmd = tokens[0]
 
         program = ""
 
-        if len(tokens) == 1:
-            token = tokens[0]
-            if token == "eq":
-                program = write_cmp("eq", "JNE", label_count)
-            elif token == "gt":
-                program = write_cmp("gt", "JLE", label_count)
-            elif token == "lt":
-                program = write_cmp("lt", "JGE", label_count)
-            elif token == "not":
-                program = f"""
-                // not
-                @SP
-                A=M-1  // point to top of stack
-                M=!M   // logical negate
-                """
-            elif token == "neg":
-                program = f"""
-                // neg
-                @SP
-                A=M-1  // point to top of stack
-                M=-M   // arithmetic negate
-                """
-            elif token == "and":
-                program = f"""
-                // and
-                @SP
-                AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
-                D=M     // D = "y"
-                A=A-1
-                M=D&M   // new top of stack = x and y
-                """
-            elif token == "or":
-                program = f"""
-                // or
-                @SP
-                AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
-                D=M     // D = "y"
-                A=A-1   // point to "x"
-                M=D|M   // new top of stack = x or y
-                """
-            elif token == "add":
-                program = f"""
-                // add
-                @SP
-                AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
-                D=M     // D = "y"
-                A=A-1   // point to "x"
-                M=D+M   // new top of stack = x+y
-                """
-            elif token == "sub":
-                program = f"""
-                // sub
-                @SP
-                AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
-                D=M     // D = "y"
-                A=A-1   // point to "x"
-                M=M-D   // new top of stack = x+y
-                """
-            else:
-                parsing_error(line_number, line)
-        elif len(tokens) == 3:
-            cmd, segment, num = tokens
-            num = int(num) & 0xFFFF
-
-            program = f"""
-                // {cmd} {segment} {num}
-            """
-
-            if cmd == "push":
-
-                # Set D to the value we want to push onto the stack.
-
-                if segment == "constant":
-                    program += f"""
-                        @{num} // {cmd} {segment} {num}
-                        D=A
-                    """
-                elif segment == "temp":
-                    actual_num = num + 5
-                    program += f"""
-                        @{actual_num} // @TEMP + num
-                        D=M
-                    """
-                elif segment == "pointer":
-                    # Push the THIS or THAT pointer onto the stack.
-                    assert num in (0, 1), f"num ({num}) is not what I expected"
-
-                    segment_symbol = "THIS" if num == 0 else "THAT"
-
-                    program += f"""
-                        @{segment_symbol}
-                        D=M
-                    """
-                elif segment == "static":
-                    # Push Static.i onto the stack
-
-                    static_var = f"{namespace}.{num}"
-
-                    program += f"""
-                        @{static_var}
-                        D=M // copy value of {static_var} into D
-                    """
-                else:
-                    assert segment in ("local", "this", "that", "argument"), f"{segment}"
-
-                    segment_symbol = SEGMENT_VM_TO_HACK[segment]
-
-                    program += f"""
-                        @{num}
-                        D=A
-                        @{segment_symbol}
-                        A=D+M
-                        D=M
-                    """
-
-                program += """
-                    @SP // push D onto the stack
-                    A=M
-                    M=D
-                    @SP
-                    M=M+1
-                """
-
-            elif cmd == "pop":
-                # Write top of stack into a memory location (segment base + offset)
-
-                assert segment in ("temp", "local", "this", "that", "pointer", "argument", "static"), f"{segment}"
-
-                program = f"""
-                // pop {segment} {num}
-                """
-
-                if segment == "temp":
-                    # Write directly into RAM[temp+num]
-                    segment_symbol = SEGMENT_VM_TO_HACK[segment]
-                    assert segment_symbol == "5"
-
-                    actual_num = num + 5
-                    program += f"""
-                        // Pop from stack
-                        @SP
-                        AM=M-1  // SP = SP-1, A = addr of top
-                        D=M     // D = value at top
-
-                        // Write to saved location
-                        @{actual_num}
-                        M=D
-                    """
-                elif segment == "pointer":
-                    # Write to RAM[THIS] or RAM[THAT]
-
-                    assert num in (0, 1), f"num = {num} unexpected for pointer"
-                    seg = "THIS" if num == 0 else "THAT"
-
-                    program += f"""
-                        @{seg} // Save the write address
-                        D=A
-                        @R15
-                        M=D // save write addr in R15
-
-                        @SP     // Pop from stack
-                        AM=M-1  // SP = SP-1, A = addr of top
-                        D=M     // D = value at top
-
-                        @R15    // Write to saved location
-                        A=M
-                        M=D
-                    """
-                elif segment == "static":
-                    # Pop from Static.{num}
-
-                    static_var = f"{namespace}.{num}"
-
-                    program += f"""
-                        @SP    // pop from stack
-                        AM=M-1 // SP = SP-1, A = addr of top
-                        D=M    // D = value at top
-
-                        @{static_var} // write to static var
-                        M=D
-                    """
-                else:
-                    segment_symbol = SEGMENT_VM_TO_HACK[segment]
-
-                    # I used this first
-                    # @{segment_symbol}
-                    # D=M
-                    # @{num}
-                    # D=D+A
-
-                    program += f"""
-                        // Save the write address
-                        @{num}
-                        D=A
-                        @{segment_symbol}
-                        D=D+M
-                        @R15
-                        M=D // save write addr in R15
-
-                        // Pop from stack
-                        @SP
-                        AM=M-1 // SP = SP-1; A points to top of stack
-                        D=M    // D = value at top of stack
-
-                        // Write to saved location
-                        @R15
-                        A=M
-                        M=D
-                    """
-
-
-            elif cmd == "label":
-                program = ""
-                pass
-            elif cmd == "goto":
-                program = ""
-                pass
-            elif cmd == "if-goto":
-                program = ""
-                pass
-            elif cmd == "function":
-                program = ""
-                pass
-            elif cmd == "call":
-                program = ""
-                pass
-            elif cmd == "return":
-                program = ""
-                pass
-            else:
-                parsing_error(line_number, line)
-        elif len(tokens) == 0:
+        if cmd == "eq":
+            program = write_cmp("eq", "JNE", label_count)
+        elif cmd == "gt":
+            program = write_cmp("gt", "JLE", label_count)
+        elif cmd == "lt":
+            program = write_cmp("lt", "JGE", label_count)
+        elif cmd == "not":
+            program = write_not()
+        elif cmd == "neg":
+            program = write_neg()
+        elif cmd == "and":
+            program = write_and()
+        elif cmd == "or":
+            program = write_or()
+        elif cmd == "add":
+            program = write_add()
+        elif cmd == "sub":
+            program = write_sub()
+        elif cmd == "push":
+            program = write_push(cmd, tokens[1], tokens[2], namespace)
+        elif cmd == "pop":
+            program = write_pop(cmd, tokens[1], tokens[2], namespace)
+        elif cmd == "label":
+            program = ""
+            pass
+        elif cmd == "goto":
+            program = ""
+            pass
+        elif cmd == "if-goto":
+            program = ""
+            pass
+        elif cmd == "function":
+            program = ""
+            pass
+        elif cmd == "call":
+            program = ""
+            pass
+        elif cmd == "return":
             program = ""
             pass
         else:
