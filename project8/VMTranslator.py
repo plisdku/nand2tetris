@@ -2,7 +2,7 @@ from functools import wraps
 import os
 from pathlib import Path
 import sys
-from typing import Callable, List, Literal, Tuple
+from typing import Callable, List, Literal, Tuple, TypeVar
 import textwrap
 
 
@@ -40,7 +40,9 @@ def remove_whitespace(program: str) -> str:
             out_lines.append(stript)
     return "\n".join(out_lines)
 
-def strip(func: Callable):
+T = TypeVar("T", bound=Callable) #[.., str])
+
+def strip(func: T) -> T:
     """
     Decorator to remove leading and trailing whitespace from output of function.
     """
@@ -50,7 +52,7 @@ def strip(func: Callable):
 
         lines = [l.strip() for l in gross_str.splitlines()]
         return "\n".join(lines)
-    return f
+    return f # type:ignore
 
 @strip
 def write_cmp(token: Literal["eq", "gt", "lt"], jump: Literal["JNE", "JLE", "JGE"], label_count: dict[str,int]):
@@ -384,7 +386,7 @@ def translate(program: str, namespace: str = "default") -> str:
             program = write_label(cmd, tokens[1], namespace)
             pass
         elif cmd == "goto":
-            program = ""
+            program = write_goto(cmd, tokens[1], namespace)
             pass
         elif cmd == "if-goto":
             program = ""

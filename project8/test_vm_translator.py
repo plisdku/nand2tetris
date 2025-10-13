@@ -341,4 +341,23 @@ def test_write_label():
     assert lines[0] == "(default.A)"
     assert lines[-1] == "(default.B)"
 
+def test_goto():
+    """Check that a program with a goto skips the intervening lines."""
+    vm_program = f"""
+        goto B
+        push constant 0
+        push constant 1
+        push constant 2
+        label B
+    """
 
+    hack = translate(vm_program)
+    
+    compy = Compy386(hack)
+    compy.run()
+
+    # If we skipped the three push commands, the stack will be empty.
+    assert compy.depth() == 0
+
+
+test_goto()
