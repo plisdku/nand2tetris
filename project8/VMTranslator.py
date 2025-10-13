@@ -17,7 +17,7 @@ SEGMENT_VM_TO_HACK = {
     "argument": "ARG"
 }
 
-def translate(program: str, namespace: str = "default") -> str: #lines: List[str]) -> List[str]:
+def translate(program: str, namespace: str = "default") -> str:
     """
     Translate lines of VM code into Hack assembly.
 
@@ -360,11 +360,7 @@ if __name__ == "__main__":
 
     input_files, output_file, do_init = normalize_arguments(sys.argv)
 
-"""
-Plan this one out.
 
-
-"""
 
 
 
