@@ -338,14 +338,14 @@ class Compy386:
         if print_stack:
             print("  ", self.get_stack())
 
-    def set_segment_base(self, segment: Literal["LCL", "ARG", "THIS", "THAT"], base_addr: int):
-        assert segment in ("LCL", "ARG", "THIS", "THAT")
+    def set_segment_base(self, segment: Literal["SP", "LCL", "ARG", "THIS", "THAT"], base_addr: int):
+        assert segment in ("SP", "LCL", "ARG", "THIS", "THAT")
         self.ram[self.symbol_table[segment]] = base_addr
 
     def get_stack(self) -> list[int]:
         return self.ram[self.stack_ptr:self.ram[self.symbol_table["SP"]]]
 
-    def segment_base(self, segment: Literal["LCL", "ARG", "THIS", "THAT", "TEMP"]) -> int:
+    def segment_base(self, segment: Literal["SP", "LCL", "ARG", "THIS", "THAT", "TEMP"]) -> int:
         """
         Get the base address for a given memory segment.
 
@@ -361,7 +361,7 @@ class Compy386:
 
         and the TEMP segment is always words 5-12 (the offset cannot be changed).
         """
-        assert segment in ("LCL", "ARG", "THIS", "THAT", "TEMP")
+        assert segment in ("SP", "LCL", "ARG", "THIS", "THAT", "TEMP")
         if segment == "TEMP":
             idx = self.symbol_table["TEMP"]
         else:
@@ -380,20 +380,75 @@ class Compy386:
         assert segment in ("LCL", "ARG", "THIS", "THAT", "TEMP")
         self.ram[self.segment_base(segment) + addr] = value
 
-
     @property
     def sp(self) -> int:
         """
         Get the stack pointer. It should be 256 when the stack is empty.
         """
-        return self.ram[self.symbol_table["SP"]]
+        return self.segment_base("SP")
 
     @sp.setter
     def sp(self, value: int):
         """
         Set the stack pointer. It should be 256 when the stack is empty.
         """
-        self.ram[self.symbol_table["SP"]] = value
+        self.set_segment_base("SP", value)
+
+    @property
+    def lcl(self) -> int:
+        """
+        Get the address of the local segment.
+        """
+        return self.segment_base("LCL")
+
+    @lcl.setter
+    def lcl(self, value: int):
+        """
+        Set the address of the local segment.
+        """
+        self.set_segment_base("LCL", value)
+
+    @property
+    def arg(self) -> int:
+        """
+        Get the address of the argument segment.
+        """
+        return self.segment_base("ARG")
+
+    @arg.setter
+    def arg(self, value: int):
+        """
+        Set the address of the argument segment.
+        """
+        self.set_segment_base("ARG", value)
+
+    @property
+    def this(self) -> int:
+        """
+        Get the address of the THIS pointer.
+        """
+        return self.segment_base("THIS")
+
+    @this.setter
+    def this(self, value: int):
+        """
+        Set the address of the THIS pointer.
+        """
+        self.set_segment_base("THIS", value)
+
+    @property
+    def that(self) -> int:
+        """
+        Get the address of the THAT pointer.
+        """
+        return self.segment_base("THAT")
+
+    @that.setter
+    def that(self, value: int):
+        """
+        Set the address of the THAT pointer.
+        """
+        self.set_segment_base("THAT", value)
 
     def push(self, value: int):
         self.ram[self.sp] = value

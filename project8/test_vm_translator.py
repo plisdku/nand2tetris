@@ -408,3 +408,36 @@ def test_if_goto():
     compy.run()
 
     assert compy.get_stack() == [1, 3]
+
+
+@pytest.mark.parametrize("num_vars", (0, 1, 2, 3))
+def test_function(num_vars: int):
+    """
+    Check that the function command makes a variable and
+    pushes the right number of zeros to the local segment.
+    """
+    vm_program = f"function foo {num_vars}"
+    hack_verbose = translate(vm_program)
+    hack_terse = remove_whitespace(remove_comments(hack_verbose))
+    assert hack_terse.splitlines()[0] == "(foo)"
+
+    compy = Compy386(hack_terse)
+
+    # Correctly initialize the stack pointer; 
+    # set the LCL pointer to the top of the stack.
+    compy.sp = 256
+    compy.lcl = compy.sp
+
+    # Write 99s into the stack in advance
+    for nn in range(num_vars+1):
+        compy.ram[compy.lcl + nn] = 99
+
+    # Run the program. This should write zeros into the local segment.
+    compy.run()
+
+    # Check that we wrote the correct number of zeroes
+    for nn in range(num_vars):
+        assert compy.get_in_segment("LCL", nn) == 0
+    assert compy.get_in_segment("LCL", num_vars) == 99
+
+

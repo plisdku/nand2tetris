@@ -2,7 +2,7 @@ from functools import wraps
 import os
 from pathlib import Path
 import sys
-from typing import Callable, List, Literal, Tuple, TypeVar
+from typing import Callable, List, Literal, Optional, Tuple, TypeVar
 import textwrap
 
 
@@ -153,18 +153,20 @@ def write_push(cmd: str, segment: str, num_str: str, namespace: str) -> str:
     program = ""
 
     if segment == "constant":
+        # Push a constant onto the stack
         program += f"""
             @{num} // {cmd} {segment} {num}
             D=A
         """
     elif segment == "temp":
+        # Push *(temp + num) onto the stack
         actual_num = num + 5
         program += f"""
             @{actual_num} // @TEMP + num
             D=M
         """
     elif segment == "pointer":
-        # Push the THIS or THAT pointer onto the stack.
+        # Push the THIS or THAT pointer onto the stack
         assert num in (0, 1), f"num ({num}) is not what I expected"
 
         segment_symbol = "THIS" if num == 0 else "THAT"
@@ -183,6 +185,9 @@ def write_push(cmd: str, segment: str, num_str: str, namespace: str) -> str:
             D=M // copy value of {static_var} into D
         """
     else:
+        # Push RAM[RAM[SEGMENT] + num] to the stack,
+        # where SEGMENT is local, this, that, or argument.
+
         assert segment in ("local", "this", "that", "argument"), f"{segment}"
 
         segment_symbol = SEGMENT_VM_TO_HACK[segment]
@@ -289,10 +294,13 @@ def write_pop(cmd: str, segment: str, num_str: str, namespace: str) -> str:
 
 
 @strip
-def write_label(cmd: str, label_name: str, namespace: str) -> str:
-    program = f"""
-        ({namespace}.{label_name})
-    """
+def write_label(cmd: str, label_name: str, namespace: Optional[str]) -> str:
+
+    if namespace is None:
+        program = f"({label_name})"
+    else:
+        program = f"({namespace}.{label_name})"
+
     return program
 
 @strip
@@ -321,10 +329,26 @@ def write_if_goto(cmd: str, label_name: str, namespace: str) -> str:
     """
 
     return program
-    
 
-# For each file:
-#  program += translate()
+@strip
+def write_function(cmd: str, function_name: str, num_vars: int) -> str:
+    """
+    Function definition. Pushes a label, then initializes the local
+    variables to zero.
+
+    (function_name)
+    push local 0
+    ...
+    push local 0   // num_vars times
+    """
+
+    program_chunks = [write_label("label", function_name, None)]
+
+    for nn in range(num_vars):
+        program_chunks.append(write_push("push", "constant", "0", ""))
+
+    program = "\n".join(program_chunks)
+    return program
 
 
 def translate(program: str, namespace: str = "default") -> str:
@@ -391,7 +415,9 @@ def translate(program: str, namespace: str = "default") -> str:
             program = write_if_goto(cmd, tokens[1], namespace)
             pass
         elif cmd == "function":
-            program = ""
+            # namespace assumed to be part of the function name, so
+            # we don't pass that in.
+            program = write_function(cmd, tokens[1], int(tokens[2]))
             pass
         elif cmd == "call":
             program = ""
@@ -434,7 +460,7 @@ def normalize_arguments(argv: List[str]) -> Tuple[List[Path], Path, bool]:
 
         # input: program.vm
         # default output path: program.asm
-        
+
         output_file = Path(argv[2]) if len(argv) >= 3 else path.with_suffix(".asm")
         do_init = False
 
