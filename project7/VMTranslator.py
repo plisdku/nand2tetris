@@ -53,6 +53,7 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
             # Strategy stolen from StackTest.asm.
             
             program = f"""
+            // {token} {jump}
             @SP
             AM=M-1 // SP = SP - 1; A = SP - 1
             D=M    // D = "y"
@@ -81,6 +82,7 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
                 out_lines.extend(program.splitlines())
             elif token == "not":
                 program = f"""
+                // not
                 @SP
                 A=M-1  // point to top of stack
                 M=!M   // logical negate
@@ -88,6 +90,7 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
                 out_lines.extend(program.splitlines())
             elif token == "neg":
                 program = f"""
+                // neg
                 @SP
                 A=M-1  // point to top of stack
                 M=-M   // arithmetic negate
@@ -95,6 +98,7 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
                 out_lines.extend(program.splitlines())
             elif token == "and":
                 program = f"""
+                // and
                 @SP
                 AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
                 D=M     // D = "y"
@@ -104,6 +108,7 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
                 out_lines.extend(program.splitlines())
             elif token == "or":
                 program = f"""
+                // or
                 @SP
                 AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
                 D=M     // D = "y"
@@ -113,15 +118,17 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
                 out_lines.extend(program.splitlines())
             elif token == "add":
                 program = f"""
+                // add
                 @SP
                 AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
                 D=M     // D = "y"
                 A=A-1   // point to "x"
-                M=M+D   // new top of stack = x+y
+                M=D+M   // new top of stack = x+y
                 """
                 out_lines.extend(program.splitlines())
             elif token == "sub":
                 program = f"""
+                // sub
                 @SP
                 AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
                 D=M     // D = "y"
@@ -135,14 +142,24 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
             cmd, segment, num = tokens
             num = int(num) & 0xFFFF
 
+            program = f"""
+                // {cmd} {segment} {num}
+            """
+
             if cmd == "push":
 
                 # Set D to the value we want to push onto the stack.
 
                 if segment == "constant":
-                    program = f"""
+                    program += f"""
                         @{num} // {cmd} {segment} {num}
                         D=A
+                    """
+                elif segment == "temp":
+                    actual_num = num + 5
+                    program += f"""
+                        @{actual_num} // @TEMP + num
+                        D=M
                     """
                 elif segment == "pointer":
                     # Push the THIS or THAT pointer onto the stack.
@@ -150,7 +167,7 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
 
                     segment_symbol = "THIS" if num == 0 else "THAT"
 
-                    program = f"""
+                    program += f"""
                         @{segment_symbol}
                         D=M
                     """
@@ -159,20 +176,20 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
 
                     static_var = f"{namespace}.{num}"
 
-                    program = f"""
+                    program += f"""
                         @{static_var}
                         D=M // copy value of {static_var} into D
                     """
                 else:
-                    assert segment in ("temp", "local", "this", "that", "argument"), f"{segment}"
+                    assert segment in ("local", "this", "that", "argument"), f"{segment}"
 
                     segment_symbol = SEGMENT_VM_TO_HACK[segment]
 
-                    program = f"""
+                    program += f"""
                         @{num}
                         D=A
                         @{segment_symbol}
-                        A=M+D
+                        A=D+M
                         D=M
                     """
 
@@ -191,34 +208,24 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
 
                 assert segment in ("temp", "local", "this", "that", "pointer", "argument", "static"), f"{segment}"
 
+                program = f"""
+                // pop {segment} {num}
+                """
+
                 if segment == "temp":
                     # Write directly into RAM[temp+num]
                     segment_symbol = SEGMENT_VM_TO_HACK[segment]
                     assert segment_symbol == "5"
 
-                    # first used this.
-                    # @{segment_symbol}
-                    # D=A
-                    # @{num}
-                    # D=D+A
-
-                    program = f"""
-                        // Save the write address
-                        @{num}
-                        D=A
-                        @{segment_symbol}
-                        D=A+D
-                        @R15
-                        M=D // save write addr in R15
-
+                    actual_num = num + 5
+                    program += f"""
                         // Pop from stack
                         @SP
                         AM=M-1  // SP = SP-1, A = addr of top
                         D=M     // D = value at top
 
                         // Write to saved location
-                        @R15
-                        A=M
+                        @{actual_num}
                         M=D
                     """
                 elif segment == "pointer":
@@ -227,7 +234,7 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
                     assert num in (0, 1), f"num = {num} unexpected for pointer"
                     seg = "THIS" if num == 0 else "THAT"
 
-                    program = f"""
+                    program += f"""
                         @{seg} // Save the write address
                         D=A
                         @R15
@@ -246,7 +253,7 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
 
                     static_var = f"{namespace}.{num}"
 
-                    program = f"""
+                    program += f"""
                         @SP    // pop from stack
                         AM=M-1 // SP = SP-1, A = addr of top
                         D=M    // D = value at top
@@ -263,12 +270,12 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
                     # @{num}
                     # D=D+A
 
-                    program = f"""
+                    program += f"""
                         // Save the write address
                         @{num}
                         D=A
                         @{segment_symbol}
-                        D=M+D
+                        D=D+M
                         @R15
                         M=D // save write addr in R15
 
@@ -318,9 +325,12 @@ if __name__ == "__main__":
 
         hack_code = translate(open(sys.argv[1]).read())
 
-        arg = os.path.abspath(sys.argv[1])
+        if len(sys.argv) >= 3:
+            out_basename = sys.argv[2]
+        else:
+            out_basename = os.path.abspath(sys.argv[1])
 
-        with open(os.path.splitext(arg)[0] + ".asm", "w") as fh:
+        with open(os.path.splitext(out_basename)[0] + ".asm", "w") as fh:
             fh.write(hack_code)
 
         print("Translation succeded.")
