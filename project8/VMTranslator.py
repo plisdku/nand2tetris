@@ -17,6 +17,37 @@ SEGMENT_VM_TO_HACK = {
     "argument": "ARG"
 }
 
+
+def write_cmp(token: Literal["eq", "gt", "lt"], jump: Literal["JNE", "JLE", "JGE"], label_count: dict[str,int]):
+    """
+    Hack implementation for "eq", "gt" and "lt".
+    """
+    label = f"{token}_{label_count.setdefault(token, 0)}"
+    label_count[token] += 1
+
+    # Compare top two items on stack.
+    #
+    # Strategy stolen from StackTest.asm.
+    
+    program = f"""
+    // {token} {jump}
+    @SP
+    AM=M-1 // SP = SP - 1; A = SP - 1
+    D=M    // D = "y"
+    A=A-1  // point to "x"
+    D=M-D  // D = "x-y"
+    M=0    // top of stack = 0 in case
+    @{label}
+    D;{jump}  // if we're done, exit
+    @SP
+    A=M-1  // point to new top of stack
+    M=-1   // top of stack = 0xFFFF
+    ({label})
+    """
+    return program
+
+
+
 def translate(program: str, namespace: str = "default") -> str:
     """
     Translate lines of VM code into Hack assembly.
@@ -43,45 +74,16 @@ def translate(program: str, namespace: str = "default") -> str:
         # Split into tokens. Expect one or three.
         tokens = line.split()
 
-        def _compare(token: Literal["eq", "gt", "lt"], jump: Literal["JNE", "JLE", "JGE"], label_count: dict[str,int]):
-            """
-            Hack implementation for "eq", "gt" and "lt".
-            """
-            label = f"{token}_{label_count.setdefault(token, 0)}"
-            label_count[token] += 1
-
-            # Compare top two items on stack.
-            #
-            # Strategy stolen from StackTest.asm.
-            
-            program = f"""
-            // {token} {jump}
-            @SP
-            AM=M-1 // SP = SP - 1; A = SP - 1
-            D=M    // D = "y"
-            A=A-1  // point to "x"
-            D=M-D  // D = "x-y"
-            M=0    // top of stack = 0 in case
-            @{label}
-            D;{jump}  // if we're done, exit
-            @SP
-            A=M-1  // point to new top of stack
-            M=-1   // top of stack = 0xFFFF
-            ({label})
-            """
-            return program
+        program = ""
 
         if len(tokens) == 1:
             token = tokens[0]
             if token == "eq":
-                program = _compare("eq", "JNE", label_count)
-                out_lines.extend(program.splitlines())
+                program = write_cmp("eq", "JNE", label_count)
             elif token == "gt":
-                program = _compare("gt", "JLE", label_count)
-                out_lines.extend(program.splitlines())
+                program = write_cmp("gt", "JLE", label_count)
             elif token == "lt":
-                program = _compare("lt", "JGE", label_count)
-                out_lines.extend(program.splitlines())
+                program = write_cmp("lt", "JGE", label_count)
             elif token == "not":
                 program = f"""
                 // not
@@ -89,7 +91,6 @@ def translate(program: str, namespace: str = "default") -> str:
                 A=M-1  // point to top of stack
                 M=!M   // logical negate
                 """
-                out_lines.extend(program.splitlines())
             elif token == "neg":
                 program = f"""
                 // neg
@@ -97,7 +98,6 @@ def translate(program: str, namespace: str = "default") -> str:
                 A=M-1  // point to top of stack
                 M=-M   // arithmetic negate
                 """
-                out_lines.extend(program.splitlines())
             elif token == "and":
                 program = f"""
                 // and
@@ -107,7 +107,6 @@ def translate(program: str, namespace: str = "default") -> str:
                 A=A-1
                 M=D&M   // new top of stack = x and y
                 """
-                out_lines.extend(program.splitlines())
             elif token == "or":
                 program = f"""
                 // or
@@ -117,7 +116,6 @@ def translate(program: str, namespace: str = "default") -> str:
                 A=A-1   // point to "x"
                 M=D|M   // new top of stack = x or y
                 """
-                out_lines.extend(program.splitlines())
             elif token == "add":
                 program = f"""
                 // add
@@ -127,7 +125,6 @@ def translate(program: str, namespace: str = "default") -> str:
                 A=A-1   // point to "x"
                 M=D+M   // new top of stack = x+y
                 """
-                out_lines.extend(program.splitlines())
             elif token == "sub":
                 program = f"""
                 // sub
@@ -137,7 +134,6 @@ def translate(program: str, namespace: str = "default") -> str:
                 A=A-1   // point to "x"
                 M=M-D   // new top of stack = x+y
                 """
-                out_lines.extend(program.splitlines())
             else:
                 parsing_error(line_number, line)
         elif len(tokens) == 3:
@@ -202,8 +198,6 @@ def translate(program: str, namespace: str = "default") -> str:
                     @SP
                     M=M+1
                 """
-
-                out_lines.extend(program.splitlines())
 
             elif cmd == "pop":
                 # Write top of stack into a memory location (segment base + offset)
@@ -292,26 +286,34 @@ def translate(program: str, namespace: str = "default") -> str:
                         M=D
                     """
 
-                out_lines.extend(program.splitlines())
 
             elif cmd == "label":
+                program = ""
                 pass
             elif cmd == "goto":
+                program = ""
                 pass
             elif cmd == "if-goto":
+                program = ""
                 pass
             elif cmd == "function":
+                program = ""
                 pass
             elif cmd == "call":
+                program = ""
                 pass
             elif cmd == "return":
+                program = ""
                 pass
             else:
                 parsing_error(line_number, line)
         elif len(tokens) == 0:
+            program = ""
             pass
         else:
             parsing_error(line_number, line)
+
+        out_lines.extend(program.splitlines())
 
     return "\n".join([line.strip() for line in out_lines])
 
