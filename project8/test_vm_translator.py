@@ -320,7 +320,6 @@ def test_remove_whitespace():
     b = 4       
 
     """
-
     stript = remove_whitespace(program)
 
     expected = "a = 3\nb = 4"
@@ -337,7 +336,9 @@ def test_write_label():
 
     # The first and last lines of the compiled program should be labels.
 
-    hack_program = translate(vm_program, "default")
+    hack_program = remove_whitespace(remove_comments(translate(vm_program, "default")))
     lines = hack_program.splitlines()
+    assert lines[0] == "(default.A)"
+    assert lines[-1] == "(default.B)"
 
 
