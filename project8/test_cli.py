@@ -1,4 +1,5 @@
 import os
+from os.path import basename
 import pathlib
 from pathlib import Path
 from VMTranslator import normalize_arguments
@@ -37,7 +38,7 @@ def test_multi_file_no_output(tmp_path: Path):
     in_files, out_file, do_init = normalize_arguments(argv)
 
     assert sorted(in_files) == sorted([file1, file2])
-    assert out_file == tmp_path.with_suffix(".asm")
+    assert out_file == (tmp_path / tmp_path.stem).with_suffix(".asm")
     assert do_init
 
 

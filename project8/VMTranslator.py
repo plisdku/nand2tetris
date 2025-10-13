@@ -423,12 +423,20 @@ def normalize_arguments(argv: List[str]) -> Tuple[List[Path], Path, bool]:
 
     if path.is_dir():
         input_files = sorted([p for p in path.iterdir() if p.suffix == ".vm"])
+
+        # input: program_dir/
+        # default output path: program_dir/program_dir.asm
+
+        output_file = Path(argv[2]) if len(argv) >= 3 else (path/path.stem).with_suffix(".asm")
         do_init = True
     else:
         input_files = [path]
-        do_init = False
 
-    output_file = Path(argv[2]) if len(argv) >= 3 else path.with_suffix(".asm")
+        # input: program.vm
+        # default output path: program.asm
+        
+        output_file = Path(argv[2]) if len(argv) >= 3 else path.with_suffix(".asm")
+        do_init = False
 
     return input_files, output_file, do_init
 
