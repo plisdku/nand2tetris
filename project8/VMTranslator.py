@@ -1,8 +1,9 @@
+from functools import wraps
 import os
 from pathlib import Path
 import sys
-import argparse
-from typing import List, Literal, Tuple
+from typing import Callable, List, Literal, Tuple
+import textwrap
 
 
 def parsing_error(line_number: int, line: str):
@@ -18,6 +19,16 @@ SEGMENT_VM_TO_HACK = {
 }
 
 
+def strip(func: Callable):
+    @wraps(func)
+    def f(*args, **kwargs) -> str:
+        gross_str = func(*args, **kwargs)
+
+        lines = [l.strip() for l in gross_str.splitlines()]
+        return "\n".join(lines)
+    return f
+
+@strip
 def write_cmp(token: Literal["eq", "gt", "lt"], jump: Literal["JNE", "JLE", "JGE"], label_count: dict[str,int]):
     """
     Hack implementation for "eq", "gt" and "lt".
@@ -30,7 +41,6 @@ def write_cmp(token: Literal["eq", "gt", "lt"], jump: Literal["JNE", "JLE", "JGE
     # Strategy stolen from StackTest.asm.
     
     program = f"""
-    // {token} {jump}
     @SP
     AM=M-1 // SP = SP - 1; A = SP - 1
     D=M    // D = "y"
@@ -46,28 +56,27 @@ def write_cmp(token: Literal["eq", "gt", "lt"], jump: Literal["JNE", "JLE", "JGE
     """
     return program
 
-
+@strip
 def write_not():
     program = f"""
-    // not
     @SP
     A=M-1  // point to top of stack
     M=!M   // logical negate
     """
     return program
 
+@strip
 def write_neg():
     program = f"""
-    // neg
     @SP
     A=M-1  // point to top of stack
     M=-M   // arithmetic negate
     """
     return program
 
+@strip
 def write_and():
     program = f"""
-    // and
     @SP
     AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
     D=M     // D = "y"
@@ -76,9 +85,9 @@ def write_and():
     """
     return program
 
+@strip
 def write_or():
     program = f"""
-    // or
     @SP
     AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
     D=M     // D = "y"
@@ -87,9 +96,9 @@ def write_or():
     """
     return program
 
+@strip
 def write_add():
     program = f"""
-    // add
     @SP
     AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
     D=M     // D = "y"
@@ -98,9 +107,9 @@ def write_add():
     """
     return program
 
+@strip
 def write_sub():
     program = f"""
-    // sub
     @SP
     AM=M-1  // SP = SP-1; A = SP-1 (top of stack)
     D=M     // D = "y"
@@ -109,13 +118,13 @@ def write_sub():
     """
     return program
 
-
+@strip
 def write_push(cmd: str, segment: str, num_str: str, namespace: str) -> str:
     # Set D to the value we want to push onto the stack.
 
     num = int(num_str) & 0xFFFF
 
-    program = f"// push {cmd} {segment} {num_str}\n// namespace: {namespace}"
+    program = ""
 
     if segment == "constant":
         program += f"""
@@ -169,7 +178,7 @@ def write_push(cmd: str, segment: str, num_str: str, namespace: str) -> str:
     """
     return program
 
-
+@strip
 def write_pop(cmd: str, segment: str, num_str: str, namespace: str) -> str:
     # Write top of stack into a memory location (segment base + offset)
 
@@ -177,7 +186,7 @@ def write_pop(cmd: str, segment: str, num_str: str, namespace: str) -> str:
 
     assert segment in ("temp", "local", "this", "that", "pointer", "argument", "static"), f"{segment}"
 
-    program = f"// pop {cmd} {segment} {num_str}\n// namespace: {namespace}"
+    program = ""
 
     if segment == "temp":
         # Write directly into RAM[temp+num]
@@ -253,6 +262,10 @@ def write_pop(cmd: str, segment: str, num_str: str, namespace: str) -> str:
     return program
 
 
+# For each file:
+#  program += translate()
+
+
 def translate(program: str, namespace: str = "default") -> str:
     """
     Translate lines of VM code into Hack assembly.
@@ -264,7 +277,7 @@ def translate(program: str, namespace: str = "default") -> str:
 
     lines = [line.strip() for line in program.splitlines()]
 
-    out_lines = []
+    out_paragraphs: list[str] = []
 
     label_count: dict[str,int] = dict(((k,0) for k in ("eq", "gt", "lt", "not", "and", "or", "add")))
 
@@ -328,9 +341,10 @@ def translate(program: str, namespace: str = "default") -> str:
         else:
             parsing_error(line_number, line)
 
-        out_lines.extend(program.splitlines())
+        out_paragraphs.append(f"// {' '.join(tokens)}")
+        out_paragraphs.append(program)
 
-    return "\n".join([line.strip() for line in out_lines])
+    return "\n".join(out_paragraphs)
 
 
 def normalize_arguments(argv: List[str]) -> Tuple[List[Path], Path, bool]:
@@ -377,7 +391,15 @@ if __name__ == "__main__":
 
     input_files, output_file, do_init = normalize_arguments(sys.argv)
 
+    asm_chapters: list[str] = []
 
+    for file in input_files:
+        with open(file) as fh:
+            contents = fh.read()
+            asm_code = translate(contents, file.stem)
+            asm_chapters.append(asm_code)
 
+    with open(output_file, "w") as fh:
+        fh.write("\n".join(asm_chapters))
 
 
