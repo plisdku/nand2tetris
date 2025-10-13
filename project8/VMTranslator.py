@@ -19,6 +19,14 @@ SEGMENT_VM_TO_HACK = {
 }
 
 
+def remove_comments(program: str) -> str:
+    """
+    Strip out all comments from a hack program or VM program
+    """
+
+    out_lines = [line.split("//")[0] for line in program.splitlines()]
+    return "\n".join(out_lines)
+
 def strip(func: Callable):
     @wraps(func)
     def f(*args, **kwargs) -> str:
@@ -262,6 +270,42 @@ def write_pop(cmd: str, segment: str, num_str: str, namespace: str) -> str:
     return program
 
 
+@strip
+def write_label(cmd: str, label_name: str, namespace: str) -> str:
+    program = f"""
+        ({namespace}.{label_name})
+    """
+    return program
+
+@strip
+def write_goto(cmd: str, label_name: str, namespace: str) -> str:
+    program = f"""
+        @{namespace}.{label_name}
+        0;JMP
+    """
+    return program
+
+@strip
+def write_if_goto(cmd: str, label_name: str, namespace: str) -> str:
+    """
+    If the top element of the stack is nonzero, jump to the label.
+    """
+
+    # push condition
+    # if-goto LABEL   <-- implement this
+    
+    program = f"""
+        @SP
+        AM=M-1 // SP = SP-1; A = address of prev top
+        D=M    // save the address to jump to
+        @{namespace}.{label_name}
+        D;JNE  // 
+    """
+
+
+    pass
+    
+
 # For each file:
 #  program += translate()
 
@@ -279,7 +323,7 @@ def translate(program: str, namespace: str = "default") -> str:
 
     out_paragraphs: list[str] = []
 
-    label_count: dict[str,int] = dict(((k,0) for k in ("eq", "gt", "lt", "not", "and", "or", "add")))
+    label_count: dict[str,int] = {}
 
     for line_number, line in enumerate(lines):
         # Remove extra whitespace
@@ -321,7 +365,7 @@ def translate(program: str, namespace: str = "default") -> str:
         elif cmd == "pop":
             program = write_pop(cmd, tokens[1], tokens[2], namespace)
         elif cmd == "label":
-            program = ""
+            program = write_label(cmd, tokens[1], namespace)
             pass
         elif cmd == "goto":
             program = ""

@@ -1,7 +1,7 @@
 from typing import Callable, Literal
 import pytest
 from hackulator import Compy386
-from VMTranslator import translate
+from VMTranslator import remove_comments, translate
 from operator import and_, neg, or_, add, sub, not_, invert
 
 
@@ -285,4 +285,38 @@ def test_pop_segment(segment_vm: str, segment_hack: Literal["LCL", "ARG", "THIS"
     assert compy.get_in_segment(segment_hack, 2) == 101
     assert compy.get_in_segment(segment_hack, 1) == 100
 
+
+# ==== Project 8 tests
+
+def test_strip_comments():
+    program = """
+
+        when in disgrace with fortune and men's eyes// no whitespace
+
+        // bare comment
+        // bear comment
+
+        i all alone beweep my outcast state // extra space
+    """
+
+    expected = """
+
+        when in disgrace with fortune and men's eyes
+
+        
+        
+
+        i all alone beweep my outcast state 
+    """
+
+    assert remove_comments(program) == expected
+
+
+def test_write_label():
+
+    vm_program = f"""
+        label A
+        push 0
+        label B
+    """
 
