@@ -320,8 +320,7 @@ def write_if_goto(cmd: str, label_name: str, namespace: str) -> str:
         D;JNE  // 
     """
 
-
-    pass
+    return program
     
 
 # For each file:
@@ -389,7 +388,7 @@ def translate(program: str, namespace: str = "default") -> str:
             program = write_goto(cmd, tokens[1], namespace)
             pass
         elif cmd == "if-goto":
-            program = ""
+            program = write_if_goto(cmd, tokens[1], namespace)
             pass
         elif cmd == "function":
             program = ""

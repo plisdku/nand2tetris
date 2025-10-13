@@ -359,5 +359,52 @@ def test_goto():
     # If we skipped the three push commands, the stack will be empty.
     assert compy.depth() == 0
 
+def test_if_goto():
+    """
+    Test if-goto by conditionally skipping/executing some pushes,
+    then checking that the final stack matches what is expected.
 
-test_goto()
+    For fun, let the conditional variable be positive and negative.
+    """
+
+    vm_program = """
+        // Do not go to C
+        push constant 0
+        if-goto C
+
+        // Push 1
+        push constant 1
+
+        label C
+
+        // Go to D
+        push constant -100
+        if-goto D
+
+        push constant 2
+        label D
+
+        // Do not go to E
+        push constant 0
+        if-goto E
+
+        // Push 3
+        push constant 3
+
+        label E
+
+        // Go to F (using -1 as the constant)
+        push constant 99
+        if-goto F
+
+        push constant 99
+        label F
+    """
+    # The program should result in
+    # push constant 1
+    # push constant 3
+
+    compy = Compy386(translate(vm_program))
+    compy.run()
+
+    assert compy.get_stack() == [1, 3]
