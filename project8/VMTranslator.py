@@ -1,6 +1,8 @@
 import os
+from pathlib import Path
 import sys
-from typing import List, Literal
+import argparse
+from typing import List, Literal, Tuple
 
 
 def parsing_error(line_number: int, line: str):
@@ -314,53 +316,55 @@ def translate(program: str, namespace: str = "default") -> str: #lines: List[str
     return "\n".join([line.strip() for line in out_lines])
 
 
+def normalize_arguments(argv: List[str]) -> Tuple[List[Path], Path, bool]:
+    """
+    Args:
+        argv: list of arguments from sys.argv. First arg is program name,
+            second arg is vm file path or directory containing vm files,
+            third arg (optional) is output file path
+    Returns:
+        list of input file paths
+        output file path
+        bool, True if input was a directory, False otherwise
+    """
+    path = Path(argv[1])
+
+    if path.is_dir():
+        input_files = sorted([p for p in path.iterdir() if p.suffix == ".vm"])
+        do_init = True
+    else:
+        input_files = [path]
+        do_init = False
+
+    output_file = Path(argv[2]) if len(argv) >= 3 else path.with_suffix(".asm")
+
+    return input_files, output_file, do_init
+
+
 if __name__ == "__main__":
-    print("Welcome to translator.")
-    print("Args:")
-    print(sys.argv)
 
-    try:
-        if len(sys.argv) < 2:
-            raise Exception("Usage: VMTranslator <filename>")
+    if len(sys.argv) < 2:
+        print("Usage:")
+        print("> VMTranslator")
+        print("Compile .vm files in current directory to .asm files")
+        print("> VMTranslator path/to/file.vm [output/file.asm]")
+        print(("Compile single .vm file to a .asm file in same directory or "
+            "at custom path"
+        ))
+        print("> VMTranslator path/to/directory [output/file.asm]")
+        print((
+            "Compile all files in given directory to a .asm file in the "
+            "same directory or at custom path"
+        ))
+        exit(0)
 
-        hack_code = translate(open(sys.argv[1]).read())
+    input_files, output_file, do_init = normalize_arguments(sys.argv)
 
-        if len(sys.argv) >= 3:
-            out_basename = sys.argv[2]
-        else:
-            out_basename = os.path.abspath(sys.argv[1])
-
-        with open(os.path.splitext(out_basename)[0] + ".asm", "w") as fh:
-            fh.write(hack_code)
-
-        print("Translation succeded.")
-        # print(hack_code)
-    except Exception as exc:
-        print(exc)
+"""
+Plan this one out.
 
 
+"""
 
-# Some example lines:
-#
-# push constant [n]: *sp++ = constant[n]
-# pop local [n]: local[n] = *(--sp)
-# pop argument [n]: argument[n] = *(--sp)
-# pop this [n]: this[n] = *(--sp)
-# pop that [n]: that[n] = *(--sp)
-# push temp i: *sp++ = *(5+i)
-# pop temp i: *(5+i) + *(--sp)
-# push local [n]: *sp++ = local[n]
-# push pointer 0/1: *sp++ = this/that   (any integer other than 0/1 is invalid)
-# pop pointer 0/1: this/that = *(--sp)
-# add
-# sub
-# and
-# or
-# not
-# eq
-# gt
-# lt
-#
-#
-# static symbols: each static variable i in Xxx.vm is translated
-# to the assembly symbol Xxx.i
+
+
