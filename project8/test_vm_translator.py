@@ -418,6 +418,7 @@ def test_function(num_vars: int):
     """
     vm_program = f"function foo {num_vars}"
     hack_verbose = translate(vm_program)
+    
     hack_terse = remove_whitespace(remove_comments(hack_verbose))
     assert hack_terse.splitlines()[0] == "(foo)"
 
@@ -439,5 +440,10 @@ def test_function(num_vars: int):
     for nn in range(num_vars):
         assert compy.get_in_segment("LCL", nn) == 0
     assert compy.get_in_segment("LCL", num_vars) == 99
+
+def test_call():
+    """
+
+    """
 
 

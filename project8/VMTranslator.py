@@ -1,3 +1,4 @@
+import argparse
 from functools import wraps
 import os
 from pathlib import Path
@@ -520,7 +521,8 @@ def write_return() -> str:
         M=D        // LCL = *(frame''' - 1)
 
         // goto ret_addr
-        @ret_addr
+        @ret_addr  // A = &ret_addr
+        A=M        // A = *A = ret_addr
         0;JMP
     """
     return program
@@ -609,7 +611,7 @@ def translate(program: str, namespace: str = "default") -> str:
     return "\n".join(out_paragraphs)
 
 
-def normalize_arguments(argv: List[str]) -> Tuple[List[Path], Path, bool]:
+def normalize_arguments(input_filepath: str, output_filepath: Optional[str] = None) -> Tuple[List[Path], Path, bool]:
     """
     Args:
         argv: list of arguments from sys.argv. First arg is program name,
@@ -620,7 +622,9 @@ def normalize_arguments(argv: List[str]) -> Tuple[List[Path], Path, bool]:
         output file path
         bool, True if input was a directory, False otherwise
     """
-    path = Path(argv[1])
+    path = Path(input_filepath)
+
+    print(repr(input_filepath), repr(output_filepath))
 
     if path.is_dir():
         input_files = sorted([p for p in path.iterdir() if p.suffix == ".vm"])
@@ -628,7 +632,7 @@ def normalize_arguments(argv: List[str]) -> Tuple[List[Path], Path, bool]:
         # input: program_dir/
         # default output path: program_dir/program_dir.asm
 
-        output_file = Path(argv[2]) if len(argv) >= 3 else (path/path.stem).with_suffix(".asm")
+        output_file = Path(output_filepath) if isinstance(output_filepath, str) else (path/path.stem).with_suffix(".asm")
         do_init = True
     else:
         input_files = [path]
@@ -636,32 +640,48 @@ def normalize_arguments(argv: List[str]) -> Tuple[List[Path], Path, bool]:
         # input: program.vm
         # default output path: program.asm
 
-        output_file = Path(argv[2]) if len(argv) >= 3 else path.with_suffix(".asm")
+        output_file = Path(output_filepath) if isinstance(output_filepath, str) else path.with_suffix(".asm")
         do_init = False
 
     return input_files, output_file, do_init
 
 
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Compile .vm files to Hack .asm files."
+    )
+    parser.add_argument(
+        "input_path",
+        help="VM file or directory containing .vm files"
+    )
+    parser.add_argument(
+        "output_file",
+        nargs="?",
+        help="Optional output .asm file path"
+    )
+    parser.add_argument(
+        "--strip",
+        action="store_true",
+        help="Remove comments and extra whitespace"
+    )
+    args = parser.parse_args()
 
-    if len(sys.argv) < 2:
-        print("Usage:")
-        print("> VMTranslator")
-        print("Compile .vm files in current directory to .asm files")
-        print("> VMTranslator path/to/file.vm [output/file.asm]")
-        print(("Compile single .vm file to a .asm file in same directory or "
-            "at custom path"
-        ))
-        print("> VMTranslator path/to/directory [output/file.asm]")
-        print((
-            "Compile all files in given directory to a .asm file in the "
-            "same directory or at custom path"
-        ))
-        exit(0)
-
-    input_files, output_file, do_init = normalize_arguments(sys.argv)
+    input_files, output_file, do_init = normalize_arguments(args.input_path, args.output_file)
 
     asm_chapters: list[str] = []
+
+    if do_init:
+        asm_chapters.append(remove_whitespace(f"""
+            @256
+            D=A
+            @SP
+            M=D
+        """))
+
+        asm_chapters.append(translate("""
+            call Sys.init 0
+        """, "init"))
 
     for file in input_files:
         with open(file) as fh:
@@ -669,7 +689,10 @@ if __name__ == "__main__":
             asm_code = translate(contents, file.stem)
             asm_chapters.append(asm_code)
 
-    with open(output_file, "w") as fh:
-        fh.write("\n".join(asm_chapters))
+    asm_program = "\n".join(asm_chapters)
+    if args.strip:
+        asm_program = remove_whitespace(remove_comments(asm_program))
 
+    with open(output_file, "w") as fh:
+        fh.write(asm_program)
 

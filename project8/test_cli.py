@@ -19,8 +19,7 @@ def test_single_file_no_output(tmp_path: Path):
     file = tmp_path / "test.vm"
     file.touch()
 
-    argv = _sys_argv(file)
-    in_files, out_file, do_init = normalize_arguments(argv)
+    in_files, out_file, do_init = normalize_arguments(str(file))
 
     assert in_files == [file]
     assert out_file == tmp_path/"test.asm"
@@ -34,8 +33,7 @@ def test_multi_file_no_output(tmp_path: Path):
     file1.touch()
     file2.touch()
 
-    argv = _sys_argv(tmp_path)
-    in_files, out_file, do_init = normalize_arguments(argv)
+    in_files, out_file, do_init = normalize_arguments(str(tmp_path))
 
     assert sorted(in_files) == sorted([file1, file2])
     assert out_file == (tmp_path / tmp_path.stem).with_suffix(".asm")
@@ -49,8 +47,7 @@ def test_single_file_with_output(tmp_path: Path):
 
     out = tmp_path / "out.asm"
 
-    argv = _sys_argv(file, out)
-    in_files, out_file, do_init = normalize_arguments(argv)
+    in_files, out_file, do_init = normalize_arguments(str(file), str(out))
 
     assert in_files == [file]
     assert out_file == out
@@ -67,8 +64,7 @@ def test_multi_file_with_output(tmp_path: Path):
     file1.touch()
     file2.touch()
 
-    argv = _sys_argv(tmp_path, out)
-    in_files, out_file, do_init = normalize_arguments(argv)
+    in_files, out_file, do_init = normalize_arguments(str(tmp_path), str(out))
 
     assert sorted(in_files) == sorted([file1, file2])
     assert out_file == out
