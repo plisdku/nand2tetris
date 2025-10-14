@@ -425,7 +425,7 @@ def write_call(function_name: str, num_args: int, label_count: dict[str,int]) ->
             // ARG = SP - 5 - num_args
             @SP
             D=M
-            @-5
+            @5
             D=D-A
             @{num_args}
             D=D-A
@@ -444,6 +444,86 @@ def write_call(function_name: str, num_args: int, label_count: dict[str,int]) ->
         write_label(return_address_label, None)
     ]
     return "\n".join(program_chunks)
+
+@strip
+def write_return() -> str:
+    """
+    Pseudocode:
+        frame = LCL           // frame is a temporary variable
+        ret_addr = *(frame-5) // put return address in a temporary variable
+        *ARG = pop()          // reposition the return value for the caller
+        SP = ARG+1            // reposition SP for the caller
+        THAT = *(frame-1)     // restore THAT
+        THIS = *(frame-2)     // restore THIS
+        ARG = *(frame-3)      // restore ARG
+        LCL = *(frame-4)      // restore LCL
+        goto ret_addr
+    """
+
+    program = f"""
+        // frame = LCL
+        @LCL       // A = &LCL
+        D=M        // D = LCL
+        @frame     // A = &frame
+        M=D        // frame = LCL
+
+        // ret_addr = *(frame-5)
+        @5
+        A=D-A      // A = frame-5
+        D=M        // D = *(frame-5)
+        @ret_addr  // A = &ret_addr
+        M=D        // ret_addr = *(frame-5)
+
+        // *ARG = pop()
+        // ARG was pointing to the first argument,
+        // but we want to overwrite that location with
+        // the return value.
+        @SP        // A = &SP
+        AM=M-1     // SP = SP-1; A = SP-1
+        D=M        // D = *(SP-1), value from top of stack
+        @ARG       // A = &ARG
+        A=M        // A = ARG
+        M=D        // *ARG = *(SP-1)
+
+        // SP = ARG+1
+        @ARG       // A = &ARG
+        D=M+1      // D = *A + 1 = ARG + 1
+        @SP        // A = &SP
+        M=D        // SP = ARG+1
+
+        // THAT = *(frame-1)
+        @frame     // A = &frame
+        AM=M-1     // A = frame - 1; frame' = frame - 1
+        D=M        // D = *(frame - 1)
+        @THAT      // A = &THAT
+        M=D        // THAT = *(frame - 1)
+
+        // THIS = *(frame-2) = *(frame'-1)
+        @frame     // A = &frame'
+        AM=M-1     // A = frame'-1; frame'' = frame'-1
+        D=M        // D = *(frame' - 1)
+        @THIS      // A = &THIS
+        M=D        // THIS = *(frame'-1)
+
+        // ARG = *(frame-3)
+        @frame     // A = &frame''
+        AM=M-1     // A = frame''-1; frame''' = frame''-1
+        D=M        // D = *(frame'' - 1)
+        @ARG       // A = &ARG
+        M=D        // ARG = *(frame''-1)
+
+        // LCL = *(frame-4)
+        @frame     // A = &frame'''
+        AM=M-1     // A = frame'''-1; frame'''' = frame'''-1
+        D=M        // D = *(frame''' - 1)
+        @LCL       // A = &LCL
+        M=D        // LCL = *(frame''' - 1)
+
+        // goto ret_addr
+        @ret_addr
+        0;JMP
+    """
+    return program
 
 
 def translate(program: str, namespace: str = "default") -> str:
@@ -515,10 +595,10 @@ def translate(program: str, namespace: str = "default") -> str:
             program = write_function(tokens[1], int(tokens[2]))
             pass
         elif cmd == "call":
-            program = ""
+            program = write_call(tokens[1], int(tokens[2]), label_count)
             pass
         elif cmd == "return":
-            program = ""
+            program = write_return()
             pass
         else:
             parsing_error(line_number, line)
