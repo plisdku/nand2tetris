@@ -528,87 +528,89 @@ def write_return() -> str:
     return program
 
 
-def translate(program: str, namespace: str = "default") -> str:
-    """
-    Translate lines of VM code into Hack assembly.
+class Translator:
+    def __init__(self):
+        self.label_count: dict[str,int] = {}
 
-    Args:
-        program: VM code
-        namespace: should be the basename of the program file, e.g. MyProgram
-    """
 
-    lines = [line.strip() for line in program.splitlines()]
+    def translate(self, program: str, namespace: str = "default") -> str:
+        """
+        Translate lines of VM code into Hack assembly.
 
-    out_paragraphs: list[str] = []
+        Args:
+            program: VM code
+            namespace: should be the basename of the program file, e.g. MyProgram
+        """
 
-    label_count: dict[str,int] = {}
+        out_paragraphs = []
+        lines = [line.strip() for line in program.splitlines()]
 
-    for line_number, line in enumerate(lines):
-        # Remove extra whitespace
+        for line_number, line in enumerate(lines):
+            # Remove extra whitespace
 
-        # Discard comment if any
-        idx_comment = line.find("//")
-        if idx_comment != -1:
-            line = line[:idx_comment]
+            # Discard comment if any
+            idx_comment = line.find("//")
+            if idx_comment != -1:
+                line = line[:idx_comment]
 
-        # Split into tokens. Expect one or three.
-        tokens = line.split()
-        if not tokens:
-            continue
+            # Split into tokens. Expect one or three.
+            tokens = line.split()
+            if not tokens:
+                continue
 
-        cmd = tokens[0]
+            cmd = tokens[0]
 
-        program = ""
+            program = ""
 
-        if cmd == "eq":
-            program = write_cmp("eq", "JNE", label_count)
-        elif cmd == "gt":
-            program = write_cmp("gt", "JLE", label_count)
-        elif cmd == "lt":
-            program = write_cmp("lt", "JGE", label_count)
-        elif cmd == "not":
-            program = write_not()
-        elif cmd == "neg":
-            program = write_neg()
-        elif cmd == "and":
-            program = write_and()
-        elif cmd == "or":
-            program = write_or()
-        elif cmd == "add":
-            program = write_add()
-        elif cmd == "sub":
-            program = write_sub()
-        elif cmd == "push":
-            program = write_push(cmd, tokens[1], tokens[2], namespace)
-        elif cmd == "pop":
-            program = write_pop(tokens[1], tokens[2], namespace)
-        elif cmd == "label":
-            program = write_label(tokens[1], namespace)
-            pass
-        elif cmd == "goto":
-            program = write_goto(tokens[1], namespace)
-            pass
-        elif cmd == "if-goto":
-            program = write_if_goto(tokens[1], namespace)
-            pass
-        elif cmd == "function":
-            # namespace assumed to be part of the function name, so
-            # we don't pass that in.
-            program = write_function(tokens[1], int(tokens[2]))
-            pass
-        elif cmd == "call":
-            program = write_call(tokens[1], int(tokens[2]), label_count)
-            pass
-        elif cmd == "return":
-            program = write_return()
-            pass
-        else:
-            parsing_error(line_number, line)
+            if cmd == "eq":
+                program = write_cmp("eq", "JNE", self.label_count)
+            elif cmd == "gt":
+                program = write_cmp("gt", "JLE", self.label_count)
+            elif cmd == "lt":
+                program = write_cmp("lt", "JGE", self.label_count)
+            elif cmd == "not":
+                program = write_not()
+            elif cmd == "neg":
+                program = write_neg()
+            elif cmd == "and":
+                program = write_and()
+            elif cmd == "or":
+                program = write_or()
+            elif cmd == "add":
+                program = write_add()
+            elif cmd == "sub":
+                program = write_sub()
+            elif cmd == "push":
+                program = write_push(cmd, tokens[1], tokens[2], namespace)
+            elif cmd == "pop":
+                program = write_pop(tokens[1], tokens[2], namespace)
+            elif cmd == "label":
+                program = write_label(tokens[1], namespace)
+                pass
+            elif cmd == "goto":
+                program = write_goto(tokens[1], namespace)
+                pass
+            elif cmd == "if-goto":
+                program = write_if_goto(tokens[1], namespace)
+                pass
+            elif cmd == "function":
+                # namespace assumed to be part of the function name, so
+                # we don't pass that in.
+                program = write_function(tokens[1], int(tokens[2]))
+                pass
+            elif cmd == "call":
+                program = write_call(tokens[1], int(tokens[2]), self.label_count)
+                pass
+            elif cmd == "return":
+                program = write_return()
+                pass
+            else:
+                parsing_error(line_number, line)
 
-        out_paragraphs.append(f"// {' '.join(tokens)}")
-        out_paragraphs.append(program)
+            out_paragraphs.append(f"// {' '.join(tokens)}")
+            out_paragraphs.append(program)
 
-    return "\n".join(out_paragraphs)
+        return "\n".join(out_paragraphs)
 
 
 def normalize_arguments(input_filepath: str, output_filepath: Optional[str] = None) -> Tuple[List[Path], Path, bool]:
@@ -623,8 +625,6 @@ def normalize_arguments(input_filepath: str, output_filepath: Optional[str] = No
         bool, True if input was a directory, False otherwise
     """
     path = Path(input_filepath)
-
-    print(repr(input_filepath), repr(output_filepath))
 
     if path.is_dir():
         input_files = sorted([p for p in path.iterdir() if p.suffix == ".vm"])
@@ -669,6 +669,8 @@ if __name__ == "__main__":
 
     input_files, output_file, do_init = normalize_arguments(args.input_path, args.output_file)
 
+    tor = Translator()
+    
     asm_chapters: list[str] = []
 
     if do_init:
@@ -679,14 +681,14 @@ if __name__ == "__main__":
             M=D
         """))
 
-        asm_chapters.append(translate("""
+        asm_chapters.append(tor.translate("""
             call Sys.init 0
         """, "init"))
 
     for file in input_files:
         with open(file) as fh:
             contents = fh.read()
-            asm_code = translate(contents, file.stem)
+            asm_code = tor.translate(contents, file.stem)
             asm_chapters.append(asm_code)
 
     asm_program = "\n".join(asm_chapters)
