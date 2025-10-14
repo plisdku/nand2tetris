@@ -200,7 +200,13 @@ def write_push(cmd: str, segment: str, num_str: str, namespace: str) -> str:
             D=M
         """
 
-    program += """
+    program += write_push_d()
+    return program
+
+@strip
+def write_push_d() -> str:
+    """Push D onto the stack. This is called in common by all the push commands."""
+    program = """
         @SP // push D onto the stack
         A=M
         M=D
@@ -209,8 +215,9 @@ def write_push(cmd: str, segment: str, num_str: str, namespace: str) -> str:
     """
     return program
 
+
 @strip
-def write_pop(cmd: str, segment: str, num_str: str, namespace: str) -> str:
+def write_pop(segment: str, num_str: str, namespace: str) -> str:
     # Write top of stack into a memory location (segment base + offset)
 
     num = int(num_str) & 0xFFFF
@@ -294,7 +301,7 @@ def write_pop(cmd: str, segment: str, num_str: str, namespace: str) -> str:
 
 
 @strip
-def write_label(cmd: str, label_name: str, namespace: Optional[str]) -> str:
+def write_label(label_name: str, namespace: Optional[str]) -> str:
 
     if namespace is None:
         program = f"({label_name})"
@@ -304,15 +311,22 @@ def write_label(cmd: str, label_name: str, namespace: Optional[str]) -> str:
     return program
 
 @strip
-def write_goto(cmd: str, label_name: str, namespace: str) -> str:
-    program = f"""
-        @{namespace}.{label_name}
-        0;JMP
-    """
+def write_goto(label_name: str, namespace: Optional[str]) -> str:
+
+    if namespace is None:
+        program = f"""
+            @{label_name}
+            0;JMP
+        """
+    else:
+        program = f"""
+            @{namespace}.{label_name}
+            0;JMP
+        """
     return program
 
 @strip
-def write_if_goto(cmd: str, label_name: str, namespace: str) -> str:
+def write_if_goto(label_name: str, namespace: str) -> str:
     """
     If the top element of the stack is nonzero, jump to the label.
     """
@@ -331,24 +345,105 @@ def write_if_goto(cmd: str, label_name: str, namespace: str) -> str:
     return program
 
 @strip
-def write_function(cmd: str, function_name: str, num_vars: int) -> str:
+def write_function(function_name: str, num_vars: int) -> str:
     """
     Function definition. Pushes a label, then initializes the local
     variables to zero.
-
-    (function_name)
-    push local 0
-    ...
-    push local 0   // num_vars times
+    
+    Pseudocode:
+        (function_name)
+        push constant 0
+        ...
+        push constant 0   // num_vars times
     """
 
-    program_chunks = [write_label("label", function_name, None)]
+    program_chunks = [write_label(function_name, None)]
 
     for nn in range(num_vars):
         program_chunks.append(write_push("push", "constant", "0", ""))
 
     program = "\n".join(program_chunks)
     return program
+
+@strip
+def write_push_label(label: str) -> str:
+    """
+    Push the value of a label onto the stack.
+
+    Pseudocode:
+        @{label}
+        D=A
+        push D
+    """
+    program = f"@{label}\nD=A\n" + write_push_d()
+    return program
+
+@strip
+def write_push_pointer(symbol: Literal["LCL", "ARG", "THIS", "THAT"]) -> str:
+    """
+    Push the base address of a segment onto the stack.
+
+    Pseudocode:
+        @{symbol}
+        D=M
+        push D
+    """
+    program = f"@{symbol}\nD=M\n" + write_push_d()
+    return program
+
+@strip
+def write_call(function_name: str, num_args: int, label_count: dict[str,int]) -> str:
+    """
+    Pseudocode:
+        push returnAddress
+        push LCL
+        push ARG
+        push THIS
+        push THAT
+        ARG = SP-5-nArgs
+        LCL = SP
+        goto f
+        (returnAddress)
+
+    The return address is something I haven't dealt with yet.
+    I can add a label, then @label it.
+    """
+
+    return_address_prefix = f"{function_name}.call"
+    idx_call = label_count.setdefault(return_address_prefix, 0)
+    return_address_label = f"{return_address_prefix}.{idx_call}"
+    label_count[return_address_prefix] += 1
+    
+    program_chunks = [
+        write_push_label(return_address_label),
+        write_push_pointer("LCL"),
+        write_push_pointer("ARG"),
+        write_push_pointer("THIS"),
+        write_push_pointer("THAT"),
+        # ARG = SP-5-num_args
+        f"""
+            // ARG = SP - 5 - num_args
+            @SP
+            D=M
+            @-5
+            D=D-A
+            @{num_args}
+            D=D-A
+            @ARG
+            M=D
+        """,
+        # LCL = SP
+        f"""
+            // LCL = SP
+            @SP
+            D=M
+            @LCL
+            M=D
+        """,
+        write_goto(function_name, None),
+        write_label(return_address_label, None)
+    ]
+    return "\n".join(program_chunks)
 
 
 def translate(program: str, namespace: str = "default") -> str:
@@ -404,20 +499,20 @@ def translate(program: str, namespace: str = "default") -> str:
         elif cmd == "push":
             program = write_push(cmd, tokens[1], tokens[2], namespace)
         elif cmd == "pop":
-            program = write_pop(cmd, tokens[1], tokens[2], namespace)
+            program = write_pop(tokens[1], tokens[2], namespace)
         elif cmd == "label":
-            program = write_label(cmd, tokens[1], namespace)
+            program = write_label(tokens[1], namespace)
             pass
         elif cmd == "goto":
-            program = write_goto(cmd, tokens[1], namespace)
+            program = write_goto(tokens[1], namespace)
             pass
         elif cmd == "if-goto":
-            program = write_if_goto(cmd, tokens[1], namespace)
+            program = write_if_goto(tokens[1], namespace)
             pass
         elif cmd == "function":
             # namespace assumed to be part of the function name, so
             # we don't pass that in.
-            program = write_function(cmd, tokens[1], int(tokens[2]))
+            program = write_function(tokens[1], int(tokens[2]))
             pass
         elif cmd == "call":
             program = ""
