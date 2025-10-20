@@ -1,10 +1,7 @@
 import argparse
 from functools import wraps
-import os
 from pathlib import Path
-import sys
-from typing import Callable, List, Literal, Optional, Tuple, TypeVar
-import textwrap
+from typing import Callable, Dict, List, Optional, Tuple, TypeVar
 
 
 def parsing_error(line_number: int, line: str):
@@ -56,7 +53,7 @@ def strip(func: T) -> T:
     return f # type:ignore
 
 @strip
-def write_cmp(token: Literal["eq", "gt", "lt"], jump: Literal["JNE", "JLE", "JGE"], label_count: dict[str,int]):
+def write_cmp(token: str, jump: str, label_count: Dict[str,int]):
     """
     Hack implementation for "eq", "gt" and "lt".
     """
@@ -380,7 +377,7 @@ def write_push_label(label: str) -> str:
     return program
 
 @strip
-def write_push_pointer(symbol: Literal["LCL", "ARG", "THIS", "THAT"]) -> str:
+def write_push_pointer(symbol: str) -> str:
     """
     Push the base address of a segment onto the stack.
 
@@ -393,7 +390,7 @@ def write_push_pointer(symbol: Literal["LCL", "ARG", "THIS", "THAT"]) -> str:
     return program
 
 @strip
-def write_call(function_name: str, num_args: int, label_count: dict[str,int]) -> str:
+def write_call(function_name: str, num_args: int, label_count: Dict[str,int]) -> str:
     """
     Pseudocode:
         push returnAddress
@@ -530,7 +527,7 @@ def write_return() -> str:
 
 class Translator:
     def __init__(self):
-        self.label_count: dict[str,int] = {}
+        self.label_count: Dict[str,int] = {}
 
 
     def translate(self, program: str, namespace: str = "default") -> str:
@@ -670,8 +667,8 @@ if __name__ == "__main__":
     input_files, output_file, do_init = normalize_arguments(args.input_path, args.output_file)
 
     tor = Translator()
-    
-    asm_chapters: list[str] = []
+
+    asm_chapters = []
 
     if do_init:
         asm_chapters.append(remove_whitespace(f"""
