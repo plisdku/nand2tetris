@@ -1,7 +1,8 @@
 import argparse
 import pathlib
 
-from jack_analyzer import handle_paths, tokenize
+from jack_paths import handle_paths
+from jack_tokenizer import tokenize
 
 def main():
 
@@ -27,3 +28,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    

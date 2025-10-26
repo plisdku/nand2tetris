@@ -3,7 +3,7 @@ import pytest
 import sys
 import rich
 
-from jack_analyzer import handle_paths
+from jack_paths import handle_paths
 
 def test_input_directory(tmp_path: pathlib.Path):
     """
