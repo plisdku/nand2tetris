@@ -101,6 +101,15 @@ def token_category(
 def tokenize(content: str) -> str:
     """
     Read .jack code and output tokens as XML.
+
+    The outermost XML element is <tokens>. Then on separate lines,
+    each token is written <{category}> {token} </{category}>, including
+    the whitespace around the token.
+
+    Args:
+        content: Jack program text
+    Returns:
+        XML string
     """
 
     # Remove comments
@@ -121,7 +130,7 @@ def tokenize(content: str) -> str:
     xml_lines.append("<tokens>")
     for token in tokens:
         category = token_category(token)
-        xml_lines.append(f"<{category}>{token}</{category}>")
+        xml_lines.append(f"<{category}> {token} </{category}>")
     xml_lines.append("</tokens>")
 
     return "\n".join(xml_lines)
