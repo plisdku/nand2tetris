@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import List, Literal, Tuple
 
 import dataclasses
 
@@ -175,17 +175,30 @@ class Token:
     token: str
 
 
-def parse_token_xml(xml: str) -> Token:
+def parse_token_xml(xml: str) -> Tuple[str,str]:
     """
     Parse an XML element and return the token category and content.
 
+    Args:
+        xml: one XML element like "<keyword> var </keyword>"
+    Returns:
+        category (the tag)
+        token (the content, less the two spaces around it)
+
     Examples:
-        # >>> parse_token_xml("<")
+        >>> parse_token_xml("<symbol> &amp; </symbol>")
+        ('symbol', '&')
+
+        >>> parse_token_xml("<string_const> &quot;Oh yeah&quot; </string_const>")
+        ('string_const', '"Oh yeah"')
     """
     pat = re.compile(r"<(\w+)> (.*?) </\1>")
     matches = re.findall(pat, xml)
 
-    return matches
+    category = matches[0][0]
+    token = un_escape_token(matches[0][1])
+
+    return category, token
 
 
 # def read_xml(content: str) -> List[Token]:
