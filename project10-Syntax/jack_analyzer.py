@@ -62,7 +62,7 @@ def remove_block_comments(content: str) -> str:
         >>> remove_block_comments("hi /*/*/**/ there")
         'hi  there'
     """
-    pattern = re.compile(r"/\*(.*)\*/")
+    pattern = re.compile(r"/\*(.*)\*/", flags=re.DOTALL)
     return re.sub(pattern, "", content)
 
 def remove_line_comments(content: str) -> str:
@@ -73,7 +73,7 @@ def remove_line_comments(content: str) -> str:
         >>> remove_line_comments("this // is a comment")
         'this '
     """
-    pattern = re.compile(r"//.*$")
+    pattern = re.compile(r"//.*$", flags=re.MULTILINE)
     return re.sub(pattern, "", content)
 
 def tokenize(content: str) -> str:
@@ -81,8 +81,10 @@ def tokenize(content: str) -> str:
     Read .jack code and output tokens as XML.
     """
 
-    # How could I do this?
-    # Delete all comments
+    # Remove comments
+    content = remove_block_comments(content)
+    content = remove_line_comments(content)
+
     # 
 
     return "haha"
