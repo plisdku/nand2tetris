@@ -1,7 +1,7 @@
 import argparse
 import pathlib
 
-from jack_paths import handle_paths
+from jack_paths import handle_jack_xml_paths
 from jack_tokenizer import tokenize
 
 def main():
@@ -20,7 +20,7 @@ def main():
 
     args = parser.parse_args()
 
-    in_paths, out_paths = handle_paths(args.input, args.output)
+    in_paths, out_paths = handle_jack_xml_paths(args.input, args.output)
 
     for _in, _out in zip(in_paths, out_paths):
         _out.parent.mkdir(parents=True, exist_ok=True)

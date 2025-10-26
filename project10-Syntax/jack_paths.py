@@ -1,10 +1,9 @@
-
-from typing import List, Literal, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import pathlib
 
 
-def handle_paths(
+def handle_jack_xml_paths(
     in_path: pathlib.Path,
     out_path: Optional[pathlib.Path]
 ) -> Tuple[List[pathlib.Path], List[pathlib.Path]]:
@@ -46,3 +45,23 @@ def handle_paths(
             out_path = out_path.with_name(in_path.stem + "T").with_suffix(".xml")
         
         return [in_path], [out_path]
+
+def handle_xml_paths(in_path: pathlib.Path) -> List[pathlib.Path]:
+    """
+    If in_path is a directory, return list of paths to its contained XML files.
+    Otherwise, in_path should be an XML file; return that one path in a list.
+
+    Args:
+        in_path: path to directory containing .xml files; or a .xml file
+    Returns:
+        list of input file paths
+    """
+    if in_path.is_dir():
+        in_paths = [path for path in in_path.iterdir() if path.suffix == ".xml"]
+    else:
+        in_paths = [in_path]
+
+    return in_paths
+
+
+

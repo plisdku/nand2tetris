@@ -202,16 +202,22 @@ def parse_token_xml(xml: str) -> Token:
 
 
 def read_xml(content: str) -> List[Token]:
+    """
+    Parse an XML file of Jack tokens and return a list of Token objects.
+
+    Args:
+        content: an XML file beginning with <token>, then one element per line, then </token>
+    Returns:
+        list of Token objects
+    """
     lines = content.splitlines()
-
-
-
+    return [parse_token_xml(xml) for xml in lines[1:-1]]
 
 
 def main():
     import argparse
     import pathlib
-    from jack_paths import handle_paths
+    from jack_paths import handle_jack_xml_paths
 
     parser = argparse.ArgumentParser("JackTokenizer")
     parser.add_argument(
@@ -227,7 +233,7 @@ def main():
 
     args = parser.parse_args()
 
-    in_paths, out_paths = handle_paths(args.input, args.output)
+    in_paths, out_paths = handle_jack_xml_paths(args.input, args.output)
 
     for _in, _out in zip(in_paths, out_paths):
         _out.parent.mkdir(parents=True, exist_ok=True)
