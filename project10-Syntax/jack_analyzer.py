@@ -57,11 +57,24 @@ def remove_block_comments(content: str) -> str:
     Example:
         >>> remove_block_comments("hello /* there */")
         'hello '
+
+        # Test nested blocks, which shouldn't happen
+        >>> remove_block_comments("hi /*/*/**/ there")
+        'hi  there'
     """
     pattern = re.compile(r"/\*(.*)\*/")
     return re.sub(pattern, "", content)
 
+def remove_line_comments(content: str) -> str:
+    """
+    Remove // style comments.
 
+    Example:
+        >>> remove_line_comments("this // is a comment")
+        'this '
+    """
+    pattern = re.compile(r"//.*$")
+    return re.sub(pattern, "", content)
 
 def tokenize(content: str) -> str:
     """
