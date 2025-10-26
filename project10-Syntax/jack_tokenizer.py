@@ -97,6 +97,22 @@ def token_category(
     else:
         return "identifier"
 
+def escape_token(token: str) -> str:
+    """
+    Escape <, >, " and & for XML.
+
+    Examples:
+        >>> escape_token('"<hello>" &c.')
+        '&quot;&lt;hello&gt;&quot; &amp;c.'
+    """
+
+    token = token.replace("&", "&amp;") # do first lol
+    token = token.replace("<", "&lt;")
+    token = token.replace(">", "&gt;")
+    token = token.replace('"', "&quot;")
+
+    return token
+
 
 def tokenize(content: str) -> str:
     """
@@ -130,7 +146,7 @@ def tokenize(content: str) -> str:
     xml_lines.append("<tokens>")
     for token in tokens:
         category = token_category(token)
-        xml_lines.append(f"<{category}> {token} </{category}>")
+        xml_lines.append(f"<{category}> {escape_token(token)} </{category}>")
     xml_lines.append("</tokens>")
 
     return "\n".join(xml_lines)
