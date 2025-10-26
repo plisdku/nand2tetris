@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List, Literal, Tuple
 
 import dataclasses
@@ -11,6 +12,15 @@ KEYWORDS = [
     "return", "true", "false", "null", "this"
 ]
 
+
+@dataclasses.dataclass
+class Token:
+    category: str
+    token: str
+
+    @classmethod
+    def from_token(cls, content: str) -> Token:
+        return Token(category=token_category(content), token=content)
 
 def remove_block_comments(content: str) -> str:
     """
@@ -132,13 +142,9 @@ def un_escape_token(token: str) -> str:
 
     return token
 
-def tokenize(content: str) -> str:
+def tokenize(content: str) -> List[Token]:
     """
-    Read .jack code and output tokens as XML.
-
-    The outermost XML element is <tokens>. Then on separate lines,
-    each token is written <{category}> {token} </{category}>, including
-    the whitespace around the token.
+    Read .jack code and output list of tokens.
 
     Args:
         content: Jack program text
@@ -150,30 +156,35 @@ def tokenize(content: str) -> str:
     content = remove_block_comments(content)
     content = remove_line_comments(content)
 
-    tokens = []
+    raw_tokens: List[str] = []
 
     for chunk in content.split():
         # Now chunk is one or more tokens, and there is no whitespace.
         # I think if I cut out the symbols, everything else is whole tokens.
-        tokens.extend(match_tokens(chunk))
+        raw_tokens.extend(match_tokens(chunk))
 
-    # Now categorize the tokens and write the xml digest
+    # Now categorize the tokens and convert to list of Token objects
+
+    return [Token.from_token(tok) for tok in raw_tokens]
+
+def write_token_xml(tokens: List[Token]) -> str:
+    """
+    Convert a list of tokens to XML.
+
+    The outermost XML element is <tokens>. Then on separate lines,
+    each token is written <{category}> {token} </{category}>, including
+    the whitespace around the token.
+    """
 
     xml_lines = []
 
     xml_lines.append("<tokens>")
     for token in tokens:
-        category = token_category(token)
-        xml_lines.append(f"<{category}> {escape_token(token)} </{category}>")
+        xml_lines.append(f"<{token.category}> {escape_token(token.token)} </{token.category}>")
     xml_lines.append("</tokens>")
 
     return "\n".join(xml_lines)
 
-
-@dataclasses.dataclass
-class Token:
-    category: str
-    token: str
 
 def parse_token_xml(xml: str) -> Token:
     """
@@ -237,7 +248,7 @@ def main():
 
     for _in, _out in zip(in_paths, out_paths):
         _out.parent.mkdir(parents=True, exist_ok=True)
-        _out.write_text(tokenize(_in.read_text()))
+        _out.write_text(write_token_xml(tokenize(_in.read_text())))
 
 if __name__ == '__main__':
     main()
