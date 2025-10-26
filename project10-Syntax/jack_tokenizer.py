@@ -169,13 +169,13 @@ def tokenize(content: str) -> str:
 
     return "\n".join(xml_lines)
 
+
 @dataclasses.dataclass
 class Token:
     category: str
     token: str
 
-
-def parse_token_xml(xml: str) -> Tuple[str,str]:
+def parse_token_xml(xml: str) -> Token:
     """
     Parse an XML element and return the token category and content.
 
@@ -187,10 +187,10 @@ def parse_token_xml(xml: str) -> Tuple[str,str]:
 
     Examples:
         >>> parse_token_xml("<symbol> &amp; </symbol>")
-        ('symbol', '&')
+        Token(category='symbol', token='&')
 
         >>> parse_token_xml("<string_const> &quot;Oh yeah&quot; </string_const>")
-        ('string_const', '"Oh yeah"')
+        Token(category='string_const', token='"Oh yeah"')
     """
     pat = re.compile(r"<(\w+)> (.*?) </\1>")
     matches = re.findall(pat, xml)
@@ -198,11 +198,13 @@ def parse_token_xml(xml: str) -> Tuple[str,str]:
     category = matches[0][0]
     token = un_escape_token(matches[0][1])
 
-    return category, token
+    return Token(category, token)
 
 
-# def read_xml(content: str) -> List[Token]:
-#     lines = content.splitlines()
+def read_xml(content: str) -> List[Token]:
+    lines = content.splitlines()
+
+
 
 
 
