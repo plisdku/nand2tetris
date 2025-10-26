@@ -25,8 +25,5 @@ def main():
         _out.parent.mkdir(parents=True, exist_ok=True)
         _out.write_text(tokenize(_in.read_text()))
 
-
-
-
 if __name__ == '__main__':
     main()

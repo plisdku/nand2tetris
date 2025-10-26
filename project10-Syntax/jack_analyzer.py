@@ -1,4 +1,5 @@
 
+import re
 from typing import List, Optional, Tuple
 
 import pathlib
@@ -49,9 +50,27 @@ def handle_paths(
 
 
 
+def remove_block_comments(content: str) -> str:
+    """
+    Remove /* */ style comments.
+
+    Example:
+        >>> remove_block_comments("hello /* there */")
+        'hello '
+    """
+    pattern = re.compile(r"/\*(.*)\*/")
+    return re.sub(pattern, "", content)
+
+
+
 def tokenize(content: str) -> str:
     """
     Read .jack code and output tokens as XML.
     """
 
+    # How could I do this?
+    # Delete all comments
+    # 
+
     return "haha"
+
