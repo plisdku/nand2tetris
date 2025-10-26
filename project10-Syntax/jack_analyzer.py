@@ -79,6 +79,19 @@ def remove_line_comments(content: str) -> str:
     return re.sub(pattern, "", content)
 
 def match_tokens(content: str) -> List[str]:
+    """
+    Match all occurrences of either a symbol or contiguous non-whitespace.
+    Assumes that the input string already has no whitespace.
+
+    Args:
+        content: a string without whitespace
+    Returns:
+        list of tokens
+
+    Example:
+        >>> match_tokens("int main() { return 0; }")
+        ['int', 'main', '(', ')', '{', 'return', '0', ';', '}']
+    """
 
     symbol_pat = r"[{}\(\)\[\]\.,;\+\-\*/&\|<>=~]"
     word_pat = r"\w+"
