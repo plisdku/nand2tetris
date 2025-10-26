@@ -162,10 +162,15 @@ def tokenize(content: str) -> str:
         # I think if I cut out the symbols, everything else is whole tokens.
         tokens.extend(match_tokens(chunk))
 
+    # Now categorize the tokens and write the xml digest
 
+    xml_lines = []
 
-    import rich
-    rich.print(tokens)
+    xml_lines.append("<tokens>")
+    for token in tokens:
+        category = token_category(token)
+        xml_lines.append(f"<{category}>{token}</{category}>")
+    xml_lines.append("</tokens>")
 
-    return "haha"
+    return "\n".join(xml_lines)
 
