@@ -48,3 +48,36 @@ def test_input_output_directory(tmp_path: pathlib.Path):
     assert {p.name for p in in_paths} == {"file1.jack", "file2.jack"}
     assert {p.name for p in out_paths} == {"file1T.xml", "file2T.xml"}
     assert {p.parent.stem for p in out_paths} == {"xml", "xml"}
+
+def test_input_file(tmp_path: pathlib.Path):
+    """
+    Input is a file
+    """
+
+    file = tmp_path / "file.jack"
+    file.write_text("aoeu")
+
+    in_paths, out_paths = handle_paths(file, None)
+
+    assert {p.name for p in in_paths} == {"file.jack"}
+    assert {p.name for p in out_paths} == {"fileT.xml"}
+    assert in_paths[0].parent == out_paths[0].parent
+
+
+def test_input_output_file(tmp_path: pathlib.Path):
+
+    file = tmp_path / "file.jack"
+    file.write_text("aoeu")
+
+    out_dir = tmp_path / "lazy" / "hazy" / "crazy"
+    out_file = out_dir / "blah.xml"
+
+    in_paths, out_paths = handle_paths(file, out_file)
+
+    assert {p.name for p in in_paths} == {"file.jack"}
+    assert {p.name for p in out_paths} == {"fileT.xml"}
+    assert in_paths[0].parent == tmp_path
+    assert out_paths[0].parent == out_dir
+
+
+
