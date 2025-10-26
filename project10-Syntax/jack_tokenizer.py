@@ -1,4 +1,7 @@
 from typing import List, Literal
+
+import dataclasses
+
 import re
 
 SYMBOLS = "{}()[].,;+-*/&|<>=~"
@@ -113,6 +116,21 @@ def escape_token(token: str) -> str:
 
     return token
 
+def un_escape_token(token: str) -> str:
+    """
+    Un-escape &lt;, &gt;, &quot; and &amp;.
+
+    Examples:
+        >>> un_escape_token('&quot;&lt;hello&gt;&quot; &amp;c.')
+        '"<hello>" &c.'
+    """
+
+    token = token.replace("&quot;", '"')
+    token = token.replace("&gt;", ">")
+    token = token.replace("&lt;", "<")
+    token = token.replace("&amp;", "&")
+
+    return token
 
 def tokenize(content: str) -> str:
     """
@@ -150,6 +168,29 @@ def tokenize(content: str) -> str:
     xml_lines.append("</tokens>")
 
     return "\n".join(xml_lines)
+
+@dataclasses.dataclass
+class Token:
+    category: str
+    token: str
+
+
+def parse_token_xml(xml: str) -> Token:
+    """
+    Parse an XML element and return the token category and content.
+
+    Examples:
+        # >>> parse_token_xml("<")
+    """
+    pat = re.compile(r"<(\w+)> (.*?) </\1>")
+    matches = re.findall(pat, xml)
+
+    return matches
+
+
+# def read_xml(content: str) -> List[Token]:
+#     lines = content.splitlines()
+
 
 
 def main():
