@@ -49,6 +49,8 @@ def handle_paths(
         return [in_path], [out_path]
 
 
+SYMBOLS = "{}()[].,;+-*/&|<>=~"
+
 
 def remove_block_comments(content: str) -> str:
     """
@@ -76,6 +78,17 @@ def remove_line_comments(content: str) -> str:
     pattern = re.compile(r"//.*$", flags=re.MULTILINE)
     return re.sub(pattern, "", content)
 
+def match_tokens(content: str) -> List[str]:
+
+    symbol_pat = r"[{}\(\)\[\]\.,;\+\-\*/&\|<>=~]"
+    word_pat = r"\w+"
+    pattern = re.compile(f"({symbol_pat}|{word_pat})")
+
+    matches = re.findall(pattern, content)
+
+    return matches
+
+
 def tokenize(content: str) -> str:
     """
     Read .jack code and output tokens as XML.
@@ -85,7 +98,15 @@ def tokenize(content: str) -> str:
     content = remove_block_comments(content)
     content = remove_line_comments(content)
 
-    # 
+    tokens = []
+
+    for chunk in content.split():
+        # Now chunk is one or more tokens, and there is no whitespace.
+        # I think if I cut out the symbols, everything else is whole tokens.
+        tokens.extend(match_tokens(chunk))
+
+    import rich
+    rich.print(tokens)
 
     return "haha"
 
