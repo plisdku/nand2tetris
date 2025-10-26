@@ -1,6 +1,6 @@
 
 import re
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
 import pathlib
 
@@ -50,6 +50,11 @@ def handle_paths(
 
 
 SYMBOLS = "{}()[].,;+-*/&|<>=~"
+KEYWORDS = [
+    "class", "method", "function", "constructor", "int", "boolean", "char",
+    "void", "var", "static", "field", "let", "do", "if", "else", "while",
+    "return", "true", "false", "null", "this"
+]
 
 
 def remove_block_comments(content: str) -> str:
@@ -91,15 +96,54 @@ def match_tokens(content: str) -> List[str]:
     Example:
         >>> match_tokens("int main() { return 0; }")
         ['int', 'main', '(', ')', '{', 'return', '0', ';', '}']
+
+        >>> match_tokens('" this is " + " a string "')
+        ['" this is "', '+', '" a string "']
     """
 
     symbol_pat = r"[{}\(\)\[\]\.,;\+\-\*/&\|<>=~]"
     word_pat = r"\w+"
-    pattern = re.compile(f"({symbol_pat}|{word_pat})")
+    quoted_string_pat = r'".*?"' # lazy matching
+    pattern = re.compile(f"({quoted_string_pat}|{symbol_pat}|{word_pat})")
 
     matches = re.findall(pattern, content)
 
     return matches
+
+
+def token_category(
+    token: str
+) -> Literal['keyword', 'symbol', 'identifier', 'int_const', 'string_const']:
+    """
+    Categorize a token.
+
+    Args:
+        token: a string without whitespace; should be a valid token.
+    Returns:
+        category of token
+
+    Examples:
+        >>> token_category("+")
+        'symbol'
+        >>> token_category("-")
+        'symbol'
+        >>> token_category("{")
+        'symbol'
+        >>> token_category('"hello')
+        'string_const'
+    """
+    
+    if token[0] in SYMBOLS:
+        return "symbol"
+    elif token[0].isdecimal():
+        return 'int_const'
+    elif token[0] in ('"', "'"):
+        # I forget which quote we use, it's whatever
+        return 'string_const'
+    elif token in KEYWORDS:
+        return "keyword"
+    else:
+        return "identifier"
 
 
 def tokenize(content: str) -> str:
@@ -117,6 +161,8 @@ def tokenize(content: str) -> str:
         # Now chunk is one or more tokens, and there is no whitespace.
         # I think if I cut out the symbols, everything else is whole tokens.
         tokens.extend(match_tokens(chunk))
+
+
 
     import rich
     rich.print(tokens)
