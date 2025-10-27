@@ -14,7 +14,6 @@ log = logging.getLogger(__name__)
 class AnalyzerError(Exception):
     pass
 
-
 def analyze(tokens: List[Element]) -> Element:
     analyzer = SyntaxAnalyzer(tokens)
     return analyzer.analyze()
@@ -122,7 +121,10 @@ class SyntaxAnalyzer:
         elems.append(self.next("keyword", ("static", "field")))
 
         # type
-        elems.append(self.next("identifier"))
+        if self.peek("keyword", ("int", "char", "boolean")):
+            elems.append(self.next())
+        else:
+            elems.append(self.next("identifier")) # custom type 
 
         # varName
         elems.append(self.next("identifier"))
@@ -147,14 +149,12 @@ class SyntaxAnalyzer:
         logging.info("subroutineDec")
         elems: List[Element] = []
 
-        # 'constructor' | 'function' | 'method'
-        elems.append(self.next("keyword", ("constructor", "function", "method")))
-
-        # 'void' | type
-        if self.peek("keyword", "void"):
+        if self.peek("keyword", "constructor"):
             elems.append(self.next())
+            elems.append(self.next("identifier")) # class name
         else:
-            elems.append(self.next("identifier"))
+            elems.append(self.next("keyword", ("function", "method")))
+            elems.append(self.next("keyword", ("void", "int", "char", "boolean")))
 
         # subroutineName
         elems.append(self.next("identifier"))
@@ -177,15 +177,15 @@ class SyntaxAnalyzer:
 
         # Zero or one
 
-        if self.peek("identifier"):
-            elems.append(self.next("identifier")) # type
+        if self.peek("keyword", ("int", "char", "boolean")):
+            elems.append(self.next()) # type
             elems.append(self.next("identifier")) # varName
 
             # (',' type varName)*
             while self.peek("symbol", ","):
                 elems.append(self.next())
-                elems.append(self.next("identifier"))
-                elems.append(self.next("identifier"))
+                elems.append(self.next("keyword", ("int", "char", "boolean"))) # type
+                elems.append(self.next("identifier")) # varName
 
         return Element("parameterList", elems)
 
@@ -216,8 +216,8 @@ class SyntaxAnalyzer:
         elems: List[Element] = []
 
         elems.append(self.next("keyword", "var"))
-        elems.append(self.next("identifier"))
-        elems.append(self.next("identifier"))
+        elems.append(self.next(("keyword", "identifier"))) # type
+        elems.append(self.next("identifier")) # var name
 
         while self.peek("symbol", ","):
             elems.append(self.next())
@@ -326,7 +326,8 @@ class SyntaxAnalyzer:
         elems: List[Element] = []
 
         elems.append(self.next("keyword", "do"))
-        elems.append(self.compile_subroutine_call())
+        # elems.append(self.compile_subroutine_call()) # not separate element in the grammar
+        elems.extend(self.compile_subroutine_call().content)
         elems.append(self.next("symbol", ";"))
 
         return Element("doStatement", elems)
@@ -371,16 +372,17 @@ class SyntaxAnalyzer:
         logging.info("term")
         elems: List[Element] = []
 
-        if self.peek(("int_const", "stringConstant")):
+        if self.peek(("integerConstant", "stringConstant")):
             elems.append(self.next())
         elif self.peek("keyword", ("true", "false", "null", "this")):
             elems.append(self.next())
         elif self.peek("identifier"):
             # Could be varName, varName[expression], or subroutineCall
 
-            if self.peek("symbol", "(", ahead=2):
+            if self.peek("symbol", ("(", "."), ahead=2):
                 # subroutineCall
-                elems.append(self.compile_subroutine_call())
+                # elems.append(self.compile_subroutine_call())
+                elems.extend(self.compile_subroutine_call().content)
             elif self.peek("symbol", "[", ahead=2):
                 # varName[expression]
                 elems.append(self.next("identifier"))
@@ -491,9 +493,10 @@ def main():
 
     args = parser.parse_args()
 
-    in_paths, out_paths = handle_jack_xml_paths(args.input, args.output, add_T=True, in_suffixes=(".jack", ".xml"))
+    in_paths, out_paths = handle_jack_xml_paths(args.input, args.output, add_T=False, in_suffixes=(".jack",))
 
     for _in, _out in zip(in_paths, out_paths):
+        logging.info(f"Analyze {str(_in)} => {str(_out)}")
         _out.parent.mkdir(parents=True, exist_ok=True)
 
         if _in.suffix == ".jack":

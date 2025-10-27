@@ -1,12 +1,12 @@
-from typing import List, Optional, Tuple
+from typing import Collection, List, Optional, Tuple
 
 import pathlib
-
 
 def handle_jack_xml_paths(
     in_path: pathlib.Path,
     out_path: Optional[pathlib.Path],
-    add_T: bool = False
+    add_T: bool = False,
+    in_suffixes: Collection[str] = (".jack",)
 ) -> Tuple[List[pathlib.Path], List[pathlib.Path]]:
     """
     Return corresponding lists of input .jack files and output .xml files.
@@ -29,7 +29,7 @@ def handle_jack_xml_paths(
         tee = ""
 
     if in_path.is_dir():
-        in_paths = [path for path in in_path.iterdir() if path.suffix in (".jack", ".xml")]
+        in_paths = [path for path in in_path.iterdir() if path.suffix in in_suffixes]
 
         if out_path is None:
             # in_path is directory; put outputs in same directory

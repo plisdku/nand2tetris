@@ -14,7 +14,10 @@ KEYWORDS = [
 
 
 def from_token(content: str) -> Element:
-    return Element(category=token_category(content), content=content)
+    category = token_category(content)
+    if category == "stringConstant":
+        content = content.strip('"')
+    return Element(category, content)
 
 def remove_block_comments(content: str) -> str:
     """
@@ -72,7 +75,7 @@ def match_tokens(content: str) -> List[str]:
 
 def token_category(
     token: str
-) -> Literal['keyword', 'symbol', 'identifier', 'int_const', 'stringConstant']:
+) -> Literal['keyword', 'symbol', 'identifier', 'integerConstant', 'stringConstant']:
     """
     Categorize a token.
 
@@ -91,11 +94,10 @@ def token_category(
         >>> token_category('"hello')
         'stringConstant'
     """
-    
     if token[0] in SYMBOLS:
         return "symbol"
     elif token[0].isdecimal():
-        return 'int_const'
+        return 'integerConstant'
     elif token[0] in ('"', "'"):
         # I forget which quote we use, it's whatever
         return 'stringConstant'
@@ -152,10 +154,16 @@ def tokenize(content: str) -> List[Element]:
 
     raw_tokens: List[str] = []
 
-    for chunk in content.split():
-        # Now chunk is one or more tokens, and there is no whitespace.
-        # I think if I cut out the symbols, everything else is whole tokens.
-        raw_tokens.extend(match_tokens(chunk))
+    # Separate quoted strings.
+
+    # pat = re.compile('".*?"')
+
+    raw_tokens.extend(match_tokens(content))
+
+    # for chunk in content.split():
+    #     # Now chunk is one or more tokens, and there is no whitespace.
+    #     # I think if I cut out the symbols, everything else is whole tokens.
+    #     raw_tokens.extend(match_tokens(chunk))
 
     # Now categorize the tokens and convert to list of Element objects
 
@@ -174,7 +182,7 @@ def write_token_xml(tokens: List[Element]) -> str:
 
     xml_lines.append("<tokens>")
     for token in tokens:
-        xml_lines.append(f"<{token.category}> {escape_token(token.token)} </{token.category}>")
+        xml_lines.append(f"<{token.category}> {escape_token(token.content)} </{token.category}>")
     xml_lines.append("</tokens>")
 
     return "\n".join(xml_lines)
@@ -224,7 +232,7 @@ def main():
     import pathlib
     from jack_paths import handle_jack_xml_paths
 
-    parser = argparse.ArgumentParser("JackElementizer")
+    parser = argparse.ArgumentParser("JackTokenizer")
     parser.add_argument(
         "input",
         type=pathlib.Path
@@ -238,7 +246,7 @@ def main():
 
     args = parser.parse_args()
 
-    in_paths, out_paths = handle_jack_xml_paths(args.input, args.output)
+    in_paths, out_paths = handle_jack_xml_paths(args.input, args.output, add_T=True)
 
     for _in, _out in zip(in_paths, out_paths):
         _out.parent.mkdir(parents=True, exist_ok=True)
