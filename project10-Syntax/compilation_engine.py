@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Collection, List
 from jack_element import Element
+from jack_tokenizer import escape_token
 
 logging.basicConfig(
     level=logging.INFO,
@@ -445,6 +446,31 @@ class SyntaxAnalyzer:
         return Element("expressionList", elems)
 
 
+
+def write_element_xml_lines(element: Element, indent: int = 0) -> List[str]:
+    """
+    Convert a list of tokens to XML.
+
+    The outermost XML element is <tokens>. Then on separate lines,
+    each token is written <{category}> {token} </{category}>, including
+    the whitespace around the token.
+    """
+
+    tab = " "*2*indent
+
+    xml_lines: List[str] = []
+
+    if isinstance(element.content, str):
+        xml_lines.append(f"{tab}<{element.category}> {escape_token(element.content)} </{element.category}>")
+    else:
+        xml_lines.append(f"{tab}<{element.category}>")
+        for elem in element.content:
+            xml_lines.extend(write_element_xml_lines(elem, indent+1))
+        xml_lines.append(f"{tab}</{element.category}>")
+
+    return xml_lines
+
+
 def main():
     import argparse
     import pathlib
@@ -465,10 +491,15 @@ def main():
     for path in in_paths:
         content = path.read_text()
         tokens = read_xml(content)
-        rich.print(tokens)
-
         elements = analyze(tokens)
-        rich.print(elements)
+
+        print("\n".join(write_element_xml_lines(elements)))
+
 
 if __name__ == '__main__':
     main()
+
+
+
+
+
