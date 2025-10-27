@@ -6,3 +6,6 @@ from typing import List
 class Element:
     category: str
     content: str | List[Element]
+
+    def __bool__(self):
+        return True
