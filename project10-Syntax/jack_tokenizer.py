@@ -1,9 +1,9 @@
 from __future__ import annotations
-from typing import List, Literal, Tuple
-
-import dataclasses
+from typing import List, Literal
 
 import re
+
+from jack_element import Element
 
 SYMBOLS = "{}()[].,;+-*/&|<>=~"
 KEYWORDS = [
@@ -13,14 +13,8 @@ KEYWORDS = [
 ]
 
 
-@dataclasses.dataclass
-class Token:
-    category: str
-    token: str
-
-    @classmethod
-    def from_token(cls, content: str) -> Token:
-        return Token(category=token_category(content), token=content)
+def from_token(content: str) -> Element:
+    return Element(category=token_category(content), content=content)
 
 def remove_block_comments(content: str) -> str:
     """
@@ -142,7 +136,7 @@ def un_escape_token(token: str) -> str:
 
     return token
 
-def tokenize(content: str) -> List[Token]:
+def tokenize(content: str) -> List[Element]:
     """
     Read .jack code and output list of tokens.
 
@@ -163,11 +157,11 @@ def tokenize(content: str) -> List[Token]:
         # I think if I cut out the symbols, everything else is whole tokens.
         raw_tokens.extend(match_tokens(chunk))
 
-    # Now categorize the tokens and convert to list of Token objects
+    # Now categorize the tokens and convert to list of Element objects
 
-    return [Token.from_token(tok) for tok in raw_tokens]
+    return [from_token(tok) for tok in raw_tokens]
 
-def write_token_xml(tokens: List[Token]) -> str:
+def write_token_xml(tokens: List[Element]) -> str:
     """
     Convert a list of tokens to XML.
 
@@ -186,7 +180,7 @@ def write_token_xml(tokens: List[Token]) -> str:
     return "\n".join(xml_lines)
 
 
-def parse_token_xml(xml: str) -> Token:
+def parse_token_xml(xml: str) -> Element:
     """
     Parse an XML element and return the token category and content.
 
@@ -198,10 +192,10 @@ def parse_token_xml(xml: str) -> Token:
 
     Examples:
         >>> parse_token_xml("<symbol> &amp; </symbol>")
-        Token(category='symbol', token='&')
+        Element(category='symbol', content='&')
 
         >>> parse_token_xml("<string_const> &quot;Oh yeah&quot; </string_const>")
-        Token(category='string_const', token='"Oh yeah"')
+        Element(category='string_const', content='"Oh yeah"')
     """
     pat = re.compile(r"<(\w+)> (.*?) </\1>")
     matches = re.findall(pat, xml)
@@ -209,17 +203,17 @@ def parse_token_xml(xml: str) -> Token:
     category = matches[0][0]
     token = un_escape_token(matches[0][1])
 
-    return Token(category, token)
+    return Element(category, token)
 
 
-def read_xml(content: str) -> List[Token]:
+def read_xml(content: str) -> List[Element]:
     """
-    Parse an XML file of Jack tokens and return a list of Token objects.
+    Parse an XML file of Jack tokens and return a list of Element objects.
 
     Args:
         content: an XML file beginning with <token>, then one element per line, then </token>
     Returns:
-        list of Token objects
+        list of Element objects
     """
     lines = content.splitlines()
     return [parse_token_xml(xml) for xml in lines[1:-1]]
@@ -230,7 +224,7 @@ def main():
     import pathlib
     from jack_paths import handle_jack_xml_paths
 
-    parser = argparse.ArgumentParser("JackTokenizer")
+    parser = argparse.ArgumentParser("JackElementizer")
     parser.add_argument(
         "input",
         type=pathlib.Path
