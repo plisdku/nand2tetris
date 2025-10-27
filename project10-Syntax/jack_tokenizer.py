@@ -31,7 +31,7 @@ def remove_block_comments(content: str) -> str:
         >>> remove_block_comments("hi /*/*/**/ there")
         'hi  there'
     """
-    pattern = re.compile(r"/\*(.*)\*/", flags=re.DOTALL)
+    pattern = re.compile(r"/\*(.*?)\*/", flags=re.DOTALL)
     return re.sub(pattern, "", content)
 
 def remove_line_comments(content: str) -> str:

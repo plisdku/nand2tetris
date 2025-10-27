@@ -25,7 +25,7 @@ class SyntaxAnalyzer:
 
     def analyze(self):
         self.idx = 0
-        return self.compile_class()
+        return self.compile_class() 
 
     def peek(
         self,
@@ -509,6 +509,8 @@ def main():
             tokens = None
 
         if tokens is not None:
+            import rich
+            rich.print(tokens)
             xml_lines = write_element_xml_lines(analyze(tokens))
             _out.write_text("\n".join(xml_lines))
 
