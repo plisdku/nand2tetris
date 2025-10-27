@@ -371,7 +371,7 @@ class SyntaxAnalyzer:
         logging.info("term")
         elems: List[Element] = []
 
-        if self.peek(("int_const", "string_const")):
+        if self.peek(("int_const", "stringConstant")):
             elems.append(self.next())
         elif self.peek("keyword", ("true", "false", "null", "this")):
             elems.append(self.next())

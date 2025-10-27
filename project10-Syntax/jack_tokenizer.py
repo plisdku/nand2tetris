@@ -72,7 +72,7 @@ def match_tokens(content: str) -> List[str]:
 
 def token_category(
     token: str
-) -> Literal['keyword', 'symbol', 'identifier', 'int_const', 'string_const']:
+) -> Literal['keyword', 'symbol', 'identifier', 'int_const', 'stringConstant']:
     """
     Categorize a token.
 
@@ -89,7 +89,7 @@ def token_category(
         >>> token_category("{")
         'symbol'
         >>> token_category('"hello')
-        'string_const'
+        'stringConstant'
     """
     
     if token[0] in SYMBOLS:
@@ -98,7 +98,7 @@ def token_category(
         return 'int_const'
     elif token[0] in ('"', "'"):
         # I forget which quote we use, it's whatever
-        return 'string_const'
+        return 'stringConstant'
     elif token in KEYWORDS:
         return "keyword"
     else:
@@ -194,8 +194,8 @@ def parse_token_xml(xml: str) -> Element:
         >>> parse_token_xml("<symbol> &amp; </symbol>")
         Element(category='symbol', content='&')
 
-        >>> parse_token_xml("<string_const> &quot;Oh yeah&quot; </string_const>")
-        Element(category='string_const', content='"Oh yeah"')
+        >>> parse_token_xml("<stringConstant> &quot;Oh yeah&quot; </stringConstant>")
+        Element(category='stringConstant', content='"Oh yeah"')
     """
     pat = re.compile(r"<(\w+)> (.*?) </\1>")
     matches = re.findall(pat, xml)
