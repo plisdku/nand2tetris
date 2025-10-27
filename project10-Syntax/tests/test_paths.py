@@ -18,7 +18,7 @@ def test_input_directory(tmp_path: pathlib.Path):
     file2.write_text("aoeu")
     file3.write_text("aoeu")
 
-    in_paths, out_paths = handle_jack_xml_paths(tmp_path, None)
+    in_paths, out_paths = handle_jack_xml_paths(tmp_path, None, add_T=True)
 
     assert {p.name for p in in_paths} == {"file1.jack", "file2.jack"}
     assert {p.name for p in out_paths} == {"file1T.xml", "file2T.xml"}
@@ -43,7 +43,7 @@ def test_input_output_directory(tmp_path: pathlib.Path):
     file2.write_text("aoeu")
     file3.write_text("aoeu")
 
-    in_paths, out_paths = handle_jack_xml_paths(src_dir, xml_dir)
+    in_paths, out_paths = handle_jack_xml_paths(src_dir, xml_dir, add_T=True)
 
     assert {p.name for p in in_paths} == {"file1.jack", "file2.jack"}
     assert {p.name for p in out_paths} == {"file1T.xml", "file2T.xml"}
@@ -57,7 +57,7 @@ def test_input_file(tmp_path: pathlib.Path):
     file = tmp_path / "file.jack"
     file.write_text("aoeu")
 
-    in_paths, out_paths = handle_jack_xml_paths(file, None)
+    in_paths, out_paths = handle_jack_xml_paths(file, None, add_T=True)
 
     assert {p.name for p in in_paths} == {"file.jack"}
     assert {p.name for p in out_paths} == {"fileT.xml"}
@@ -72,7 +72,7 @@ def test_input_output_file(tmp_path: pathlib.Path):
     out_dir = tmp_path / "lazy" / "hazy" / "crazy"
     out_file = out_dir / "blah.xml"
 
-    in_paths, out_paths = handle_jack_xml_paths(file, out_file)
+    in_paths, out_paths = handle_jack_xml_paths(file, out_file, add_T=True)
 
     assert {p.name for p in in_paths} == {"file.jack"}
     assert {p.name for p in out_paths} == {"fileT.xml"}

@@ -5,7 +5,8 @@ import pathlib
 
 def handle_jack_xml_paths(
     in_path: pathlib.Path,
-    out_path: Optional[pathlib.Path]
+    out_path: Optional[pathlib.Path],
+    add_T: bool = False
 ) -> Tuple[List[pathlib.Path], List[pathlib.Path]]:
     """
     Return corresponding lists of input .jack files and output .xml files.
@@ -21,12 +22,18 @@ def handle_jack_xml_paths(
         list of input file paths
         list of output file paths corresponding to input file paths
     """
+
+    if add_T:
+        tee = "T"
+    else:
+        tee = ""
+
     if in_path.is_dir():
-        in_paths = [path for path in in_path.iterdir() if path.suffix == ".jack"]
+        in_paths = [path for path in in_path.iterdir() if path.suffix in (".jack", ".xml")]
 
         if out_path is None:
             # in_path is directory; put outputs in same directory
-            out_paths = [path.with_name(path.stem + "T").with_suffix(".xml") for path in in_paths]
+            out_paths = [path.with_name(path.stem + tee).with_suffix(".xml") for path in in_paths]
         else:
             # in_path is directory; out_path is directory
             assert isinstance(out_path, pathlib.Path)
@@ -34,15 +41,15 @@ def handle_jack_xml_paths(
             if not out_path.exists:
                 out_path.mkdir(parents=True, exist_ok=True)
 
-            out_paths = [(out_path / (path.stem + "T")).with_suffix(".xml") for path in in_paths]
+            out_paths = [(out_path / (path.stem + tee)).with_suffix(".xml") for path in in_paths]
 
         return in_paths, out_paths
     else:
         if out_path is None:
             # in_path is file; put output next to it
-            out_path = in_path.with_name(in_path.stem + "T").with_suffix(".xml")
+            out_path = in_path.with_name(in_path.stem + tee).with_suffix(".xml")
         else:
-            out_path = out_path.with_name(in_path.stem + "T").with_suffix(".xml")
+            out_path = out_path.with_name(in_path.stem + tee).with_suffix(".xml")
         
         return [in_path], [out_path]
 
