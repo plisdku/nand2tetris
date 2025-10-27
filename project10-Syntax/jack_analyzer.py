@@ -6,7 +6,7 @@ from jack_element import Element
 from jack_tokenizer import escape_token
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,
     format="%(levelname)s:%(funcName)s: %(message)s"
 )
 log = logging.getLogger(__name__)
@@ -509,8 +509,6 @@ def main():
             tokens = None
 
         if tokens is not None:
-            import rich
-            rich.print(tokens)
             xml_lines = write_element_xml_lines(analyze(tokens))
             _out.write_text("\n".join(xml_lines))
 
