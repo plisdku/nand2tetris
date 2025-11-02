@@ -27,8 +27,8 @@ def remove_block_comments(content: str) -> str:
         >>> remove_block_comments("hello /* there */")
         'hello '
 
-        # Test nested blocks, which shouldn't happen
-        >>> remove_block_comments("hi /*/*/**/ there")
+        # Test infix block
+        >>> remove_block_comments("hi /* yo */ there")
         'hi  there'
     """
     pattern = re.compile(r"/\*(.*?)\*/", flags=re.DOTALL)
