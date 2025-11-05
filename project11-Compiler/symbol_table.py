@@ -73,6 +73,16 @@ class SymbolTable:
         return symbol
 
     def count(self, kind: str) -> int:
-        """Return the number of symbols of a given kind in the table"""
+        """
+        Return the number of symbols of a given kind in the table.
+
+        Examples:
+            >>> table = SymbolTable()
+            >>> symbol = table.insert("x", "static", "int")
+            >>> table.count("static")
+            1
+            >>> table.count("field")
+            0
+        """
         return self.count_by_kind.get(kind, 0)
 
