@@ -229,12 +229,22 @@ class Compiler:
         elems: List[Element] = []
 
         elems.append(self.next("keyword", "var"))
-        elems.append(self.next(("keyword", "identifier"))) # type
-        elems.append(self.next("identifier")) # var name
+        var_type = self.next(("keyword", "identifier")) # type
+        elems.append(var_type)
+
+        var_name = self.next("identifier") # var name
+        elems.append(var_name)
+
+        assert isinstance(var_type.content, str)
+        assert isinstance(var_name.content, str)
+        self.local_symbols.insert(var_name.content, "var", var_type.content)
 
         while self.peek("symbol", ","):
-            elems.append(self.next())
-            elems.append(self.next("identifier"))
+            elems.append(self.next()) # ","
+            var_name = self.next("identifier")
+            elems.append(var_name)
+            assert isinstance(var_name.content, str)
+            self.local_symbols.insert(var_name.content, "var", var_type.content)
 
         elems.append(self.next("symbol", ";"))
 
