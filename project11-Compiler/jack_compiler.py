@@ -160,6 +160,9 @@ class Compiler:
         '(' parameterList ')' subroutineBody
         """
         logging.info("subroutineDec")
+
+        self.local_symbols.reset()
+
         elems: List[Element] = []
 
         if self.peek("keyword", "constructor"):
@@ -191,14 +194,27 @@ class Compiler:
         # Zero or one
 
         if self.peek("keyword", ("int", "char", "boolean")):
-            elems.append(self.next()) # type
-            elems.append(self.next("identifier")) # varName
+            var_type = self.next()
+            elems.append(var_type)
+            var_name = self.next("identifier")
+            elems.append(var_name)
+
+            assert isinstance(var_type.content, str)
+            assert isinstance(var_name.content, str)
+            self.local_symbols.insert(var_name.content, "arg", var_type.content)
 
             # (',' type varName)*
             while self.peek("symbol", ","):
                 elems.append(self.next())
-                elems.append(self.next("keyword", ("int", "char", "boolean"))) # type
-                elems.append(self.next("identifier")) # varName
+                var_type = self.next("keyword", ("int", "char", "boolean"))
+                elems.append(var_type)
+                var_name = self.next("identifier")
+                elems.append(var_name)
+                
+                assert isinstance(var_type.content, str)
+                assert isinstance(var_name.content, str)
+                self.local_symbols.insert(var_name.content, "arg", var_type.content)
+
 
         return Element("parameterList", elems)
 
