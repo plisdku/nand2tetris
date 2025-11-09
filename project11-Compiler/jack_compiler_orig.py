@@ -28,13 +28,8 @@ class CookieMonster:
         self.index = 0
 
     def next(self, category: Optional[str] = None, content: Optional[str] = None) -> Element:
-        elem = self.peek(category, content)
+        elem = self.elements[self.index]
         log.info(f"{elem}")
-        self.index += 1
-        return elem
-
-    def peek(self, category: Optional[str] = None, content: Optional[str] = None, ahead: int = 1) -> Element:
-        elem = self.elements[self.index + (ahead-1)]
 
         if category is not None:
             if elem.category != category:
@@ -44,6 +39,24 @@ class CookieMonster:
                 raise CompilerError(f"Expected content {content!r}; got {elem.content!r}\nelem = {elem}")
             elif isinstance(elem.content, list):
                 raise CompilerError(f"Expected content {content!r}; got a list of length {len(elem.content)}")
+            else:
+                assert elem.content == content
+
+        self.index += 1
+
+        return elem
+
+    def peek(self, category: Optional[str] = None, content: Optional[str] = None, ahead: int = 1) -> Optional[Element]:
+        elem = self.elements[self.index + (ahead-1)]
+
+        if category is not None:
+            if elem.category != category:
+                return None
+        if content is not None:
+            if isinstance(elem.content, str) and elem.content != content:
+                return None
+            elif isinstance(elem.content, list):
+                return None
             else:
                 assert elem.content == content
 
@@ -68,7 +81,7 @@ class JackCompiler:
         class_elem = munch.next("identifier")
         munch.next("symbol", "{")
 
-        while munch.peek().category == "classVarDec":
+        while munch.peek("classVarDec"):
             self.compile_class_var_dec(munch.next("classVarDec"))
 
 
