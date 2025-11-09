@@ -4,7 +4,7 @@ import logging
 from typing import Collection, List, cast
 from jack_element import Element
 from jack_tokenizer import escape_token
-from symbol_table import SymbolTable, KIND
+from symbol_table import SymbolTable, KIND, Symbol
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,6 +25,13 @@ class Compiler:
         self.tokens: List[Element] = tokens
         self.static_symbols: SymbolTable = SymbolTable()
         self.local_symbols: SymbolTable = SymbolTable()
+
+    def get_symbol(self, name: str) -> Symbol:
+        if name in self.local_symbols:
+            return self.local_symbols[name]
+        else:
+            return self.static_symbols[name]
+
 
     def compile_elements(self):
         self.idx = 0
@@ -102,6 +109,10 @@ class Compiler:
         while self.peek("keyword", ("static", "field")):
             elems.append(self.compile_class_var_dec())
 
+        log.info("Static symbols:")
+        for symbol in self.static_symbols:
+            log.info(f"\t{symbol.index}: {symbol.kind} {symbol.type} {symbol.name}")
+
         while self.peek("keyword", ("constructor", "function", "method")):
             elems.append(self.compile_subroutine_dec())
 
@@ -135,20 +146,25 @@ class Compiler:
         var_name = self.next("identifier")
         elems.append(var_name)
 
+        assert isinstance(var_name.content, str)
+        assert isinstance(var_kind.content, str)
+        assert isinstance(var_type.content, str)
+        kind = cast(KIND, var_kind.content)
+        self.static_symbols.insert(var_name.content, kind, var_type.content)
+
         # (',', varName)* ';'
         while self.peek("symbol", ","):
             elems.append(self.next("symbol", ","))
-            elems.append(self.next("identifier"))
+            var_name = self.next("identifier")
+            elems.append(var_name)
+
+            assert isinstance(var_name.content, str)
+            self.static_symbols.insert(var_name.content, kind, var_type.content)
+            
 
         # ';'
         elems.append(self.next("symbol", ";"))
 
-        assert isinstance(var_name.content, str)
-        assert isinstance(var_kind.content, str)
-        assert isinstance(var_type.content, str)
-
-        kind = cast(KIND, var_kind.content)
-        self.static_symbols.insert(var_name.content, kind, var_type.content)
 
         return Element("classVarDec", elems)
 
@@ -182,6 +198,10 @@ class Compiler:
 
         elems.append(self.compile_subroutine_body())
 
+        log.info("Local symbols:")
+        for symbol in self.local_symbols:
+            log.info(f"\t{symbol.index}: {symbol.kind} {symbol.type} {symbol.name}")
+
         return Element("subroutineDec", elems)
 
     def compile_parameter_list(self) -> Element:
@@ -210,7 +230,7 @@ class Compiler:
                 elems.append(var_type)
                 var_name = self.next("identifier")
                 elems.append(var_name)
-                
+
                 assert isinstance(var_type.content, str)
                 assert isinstance(var_name.content, str)
                 self.local_symbols.insert(var_name.content, "arg", var_type.content)
@@ -302,7 +322,10 @@ class Compiler:
         elems: List[Element] = []
 
         elems.append(self.next("keyword", "let"))
-        elems.append(self.next("identifier"))
+        var_name = self.next("identifier")
+        elems.append(var_name)
+        assert isinstance(var_name.content, str)
+        log.info(f"let {var_name.content}: {self.get_symbol(var_name.content)}")
 
         if self.peek("symbol", "["):
             elems.append(self.next())
