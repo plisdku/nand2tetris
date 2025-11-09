@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Optional
+import logging
 
 from jack_element import Element
 from symbol_table import SymbolTable
@@ -14,35 +15,37 @@ from symbol_table import SymbolTable
 # Element(category='symbol')
 # Element(category='term')
 
+log = logging.getLogger(__name__)
+
+
 
 class CompilerError(Exception):
     pass
 
 class CookieMonster:
-    def __init__(self, elements: list[Element]):
+    def __init__(self, elements: List[Element]):
         self.elements = elements
         self.index = 0
 
-    def next(self, category: str | None = None, content: str | None = None) -> Element:
+    def next(self, category: Optional[str] = None, content: Optional[str] = None) -> Element:
         elem = self.peek(category, content)
+        log.info(f"{elem}")
         self.index += 1
         return elem
 
-    def peek(self, category: str | None = None, content: str | None = None) -> Element:
-        elem = self.elements[self.index]
+    def peek(self, category: Optional[str] = None, content: Optional[str] = None, ahead: int = 1) -> Element:
+        elem = self.elements[self.index + (ahead-1)]
 
         if category is not None:
             if elem.category != category:
-                raise CompilerError(f"Expected category {category!r}; got {elem.category!r}")
+                raise CompilerError(f"Expected category {category!r}; got {elem.category!r}\nelem = {elem}")
         if content is not None:
             if isinstance(elem.content, str) and elem.content != content:
-                raise CompilerError(f"Expected content {content!r}; got {elem.content!r}")
+                raise CompilerError(f"Expected content {content!r}; got {elem.content!r}\nelem = {elem}")
             elif isinstance(elem.content, list):
                 raise CompilerError(f"Expected content {content!r}; got a list of length {len(elem.content)}")
             else:
-                raise CompilerError(f"Unexpected error, expected content {content!r}; got {elem.content!r}")
-
-        self.index += 1
+                assert elem.content == content
 
         return elem
 
@@ -65,7 +68,7 @@ class JackCompiler:
         class_elem = munch.next("identifier")
         munch.next("symbol", "{")
 
-        while munch.peek("classVarDec"):
+        while munch.peek().category == "classVarDec":
             self.compile_class_var_dec(munch.next("classVarDec"))
 
 
@@ -76,6 +79,7 @@ class JackCompiler:
         munch = CookieMonster(element.content)
 
         while not munch.done() and munch.peek("classVarDec"):
+            pass
             
 
 

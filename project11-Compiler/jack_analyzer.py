@@ -5,10 +5,6 @@ from typing import Collection, List
 from jack_element import Element
 from jack_tokenizer import escape_token
 
-logging.basicConfig(
-    level=logging.WARNING,
-    format="%(levelname)s:%(funcName)s: %(message)s"
-)
 log = logging.getLogger(__name__)
 
 class AnalyzerError(Exception):

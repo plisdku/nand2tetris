@@ -61,21 +61,21 @@ class Compiler:
         if category is not None:
             if isinstance(category, str):
                 if token.category != category:
-                    raise CompilerError(f"Expected ({category!r}, {value!r}); got {token!r}")
+                    raise CompilerError(f"Expected ({category!r}, {value!r}); got {token}")
             else:
                 if token.category not in category:
-                    raise CompilerError(f"Expected ({category!r}, {value!r}); got {token!r}")
+                    raise CompilerError(f"Expected ({category!r}, {value!r}); got {token}")
         if value is not None:
             if isinstance(value, str):
                 if token.content != value:
-                    raise CompilerError(f"Expected ({category!r}, {value!r}); got {token!r}")
+                    raise CompilerError(f"Expected ({category!r}, {value!r}); got {token}")
             else:
                 if token.content not in value:
-                    raise CompilerError(f"Expected ({category!r}, {value!r}); got {token!r}")
+                    raise CompilerError(f"Expected ({category!r}, {value!r}); got {token}")
 
         self.idx += 1
 
-        logging.info(f"{token!r}")
+        logging.info(f"{token}")
         return token
 
     def compile_class(self) -> Element:

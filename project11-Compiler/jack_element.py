@@ -9,3 +9,9 @@ class Element:
 
     def __bool__(self):
         return True
+
+    def __str__(self):
+        if isinstance(self.content, str):
+            return f"Element(category='{self.category}', content='{self.content}')"
+        else:
+            return f"Element(category='{self.category}', content=[{len(self.content)} items])"
