@@ -11,6 +11,12 @@ class Symbol:
     index: int
     """Index of the symbol within its kind"""
 
+
+# NOTE: each symbol NOT FOUND in the symbol table can be assumed to be a CLASS NAME
+# or a SUBROUTINE NAME according to the lecture.
+#
+# So, I conclude, class names and subroutine names don't go into the table. Hrm.
+
 @dataclasses.dataclass
 class SymbolTable:
 
