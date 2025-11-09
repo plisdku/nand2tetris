@@ -32,6 +32,9 @@ class SymbolTable:
         self.count_by_kind = dict()
         self.symbols = dict()
 
+    def __len__(self) -> int:
+        return len(self.symbols)
+
     def __getitem__(self, name: str) -> Symbol:
         """Get a symbol by name"""
         try:
