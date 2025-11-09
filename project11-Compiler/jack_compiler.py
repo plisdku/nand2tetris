@@ -160,7 +160,7 @@ class Compiler:
 
             assert isinstance(var_name.content, str)
             self.static_symbols.insert(var_name.content, kind, var_type.content)
-            
+
 
         # ';'
         elems.append(self.next("symbol", ";"))
@@ -444,16 +444,27 @@ class Compiler:
             if self.peek("symbol", ("(", "."), ahead=2):
                 # subroutineCall
                 # elems.append(self.compile_subroutine_call())
-                elems.extend(self.compile_subroutine_call().content)
+                subroutine_elem = self.compile_subroutine_call()
+                assert isinstance(subroutine_elem.content, List)
+                elems.extend(subroutine_elem.content)
             elif self.peek("symbol", "[", ahead=2):
                 # varName[expression]
-                elems.append(self.next("identifier"))
+                var_name = self.next("identifier")
+                elems.append(var_name)
+
+                assert isinstance(var_name.content, str)
+                log.info(f"var [] reference: {self.get_symbol(var_name.content)}")
+
                 elems.append(self.next("symbol", "["))
                 elems.append(self.compile_expression())
                 elems.append(self.next("symbol", "]"))
             else:
                 # varName
-                elems.append(self.next("identifier"))
+                var_name = self.next("identifier")
+                elems.append(var_name)
+
+                assert isinstance(var_name.content, str)
+                log.info(f"var reference: {self.get_symbol(var_name.content)}")
         elif self.peek("symbol", "("):
             elems.append(self.next())
             elems.append(self.compile_expression())
