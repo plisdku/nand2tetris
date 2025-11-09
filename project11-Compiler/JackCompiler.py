@@ -5,7 +5,7 @@ import logging
 from jack_paths import handle_jack_vm_paths
 from jack_tokenizer import tokenize, read_xml
 from jack_analyzer import write_element_xml_lines, analyze
-from jack_compiler_orig import compile_elements
+from jack_compiler import compile_elements
 
 # logging.basicConfig(
 #     level=logging.INFO,
@@ -49,7 +49,7 @@ def main():
             # import rich
             # rich.print(parse_tree_elements)
 
-            compile_elements([parse_tree_elements])
+            compile_elements(tokens) #[parse_tree_elements])
 
             # 
             # _out.write_text("\n".join(xml_lines))

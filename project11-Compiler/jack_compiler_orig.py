@@ -73,19 +73,32 @@ class JackCompiler:
         self.local_table = SymbolTable()
 
     def compile_class(self, element: Element):
+        """
+        Compile a class. The first token should be the 'class' keyword.
+
+        'class' className '{' classVarDec* subroutineDec* '}'
+        """
         assert element.category == "class"
         assert isinstance(element.content, list)
 
         munch = CookieMonster(element.content)
         munch.next(content="class")
-        class_elem = munch.next("identifier")
+        class_elem = munch.next("identifier") # NAME OF CLASS
         munch.next("symbol", "{")
 
         while munch.peek("classVarDec"):
             self.compile_class_var_dec(munch.next("classVarDec"))
 
+        while munch.peek("subroutineDec"):
+            self.compile_subroutine_dec(munch.next("subroutineDec"))
+
 
     def compile_class_var_dec(self, element: Element):
+        """
+        Compile a classVarDec:
+
+        ('static' | 'field') type varName (',', varName)* ';'
+        """
         assert element.category == "classVarDec"
         assert isinstance(element.content, list)
 
@@ -97,26 +110,50 @@ class JackCompiler:
 
 
     def compile_subroutine_dec(self, element: Element):
+        """
+        Compile a subroutineDec:
+
+        ('constructor' | 'function' | 'method') ('void' | type) subroutineName
+        '(' parameterList ')' subroutineBody
+        """
         pass
 
     def compile_parameter_list(self, element: Element):
+        """
+        ( (type varName) (',' type varName)* )?
+        """
         pass
 
     def compile_subroutine_body(self, element: Element):
+        """
+        '{' varDec* statements '}'
+        """
         pass
 
     def compile_var_dec(self, element: Element):
+        """
+        'var' type varName (',' varName)* ';'
+        """
         pass
 
     def compile_statements(self, element: Element):
+        """
+        statement*
+        """
         pass
 
 
 
     def compile_expression(self, element: Element):
+        """
+        term (op term)*
+        """
         pass
 
     def compile_statement(self, element: Element):
+        """
+        letStatement | ifStatement | whileStatement | doStatement | returnStatement
+        """
         pass
 
 

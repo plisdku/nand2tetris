@@ -20,7 +20,7 @@ class Symbol:
 @dataclasses.dataclass
 class SymbolTable:
 
-    count_by_kind: Dict[KIND, int] = dataclasses.field(default_factory=dict)
+    count_by_kind: Dict[str, int] = dataclasses.field(default_factory=dict)
     symbols: Dict[str, Symbol] = dataclasses.field(default_factory=dict)
         
     def __init__(self):

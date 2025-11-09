@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import logging
-from typing import Collection, List
+from typing import Collection, List, cast
 from jack_element import Element
 from jack_tokenizer import escape_token
+from symbol_table import SymbolTable, KIND
 
 logging.basicConfig(
-    level=logging.WARNING,
+    level=logging.INFO,
     format="%(levelname)s:%(funcName)s: %(message)s"
 )
 log = logging.getLogger(__name__)
@@ -22,6 +23,8 @@ class Compiler:
     def __init__(self, tokens: List[Element]):
         self.idx = 0
         self.tokens: List[Element] = tokens
+        self.static_symbols: SymbolTable = SymbolTable()
+        self.local_symbols: SymbolTable = SymbolTable()
 
     def compile_elements(self):
         self.idx = 0
@@ -118,16 +121,19 @@ class Compiler:
         elems: List[Element] = []
 
         # 'static' | 'field'
-        elems.append(self.next("keyword", ("static", "field")))
+        var_kind = self.next("keyword", ("static", "field"))
+        elems.append(var_kind)
 
         # type
         if self.peek("keyword", ("int", "char", "boolean")):
-            elems.append(self.next())
+            var_type = self.next()
         else:
-            elems.append(self.next("identifier")) # custom type 
+            var_type = self.next("identifier") # custom type 
+        elems.append(var_type)
 
         # varName
-        elems.append(self.next("identifier"))
+        var_name = self.next("identifier")
+        elems.append(var_name)
 
         # (',', varName)* ';'
         while self.peek("symbol", ","):
@@ -136,6 +142,13 @@ class Compiler:
 
         # ';'
         elems.append(self.next("symbol", ";"))
+
+        assert isinstance(var_name.content, str)
+        assert isinstance(var_kind.content, str)
+        assert isinstance(var_type.content, str)
+
+        kind = cast(KIND, var_kind.content)
+        self.static_symbols.insert(var_name.content, kind, var_type.content)
 
         return Element("classVarDec", elems)
 
