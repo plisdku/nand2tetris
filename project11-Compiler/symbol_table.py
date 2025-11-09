@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Dict, Literal
+from typing import Any, Dict, Iterator, Literal
 
 KIND = Literal["static", "field", "arg", "var"]
 
@@ -38,6 +38,9 @@ class SymbolTable:
             return self.symbols[name]
         except KeyError as exc:
             raise KeyError(f"No symbol named {name} is in the table") from exc
+
+    def __iter__(self) -> Iterator[Symbol]:
+        return iter(self.symbols.values())
 
     def __contains__(self, name: str) -> bool:
         """
