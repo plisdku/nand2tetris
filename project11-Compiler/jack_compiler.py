@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import logging
-from typing import Collection, List, cast
+from typing import Collection, List, Optional, cast
 from jack_element import Element
-from jack_tokenizer import escape_token
+from jack_tokenizer import escape_token, tokenize
 from symbol_table import SymbolTable, KIND, Symbol
 
 logging.basicConfig(
@@ -15,13 +15,50 @@ log = logging.getLogger(__name__)
 class CompilerError(Exception):
     pass
 
+
+def compile_jack(code: str):
+    tokens = tokenize(code)
+    return compile_elements(tokens)
+
 def compile_elements(tokens: List[Element]) -> Element:
     compiler = Compiler(tokens)
     return compiler.compile_elements()
 
+
+"""
+VM command reference:
+
+push [segment] [index]
+pop [segment] [index]
+
+segments are (argument, local, static, constant, this, that, pointer, temp)
+
+add, sub, neg
+eq, gt, lt
+and, or, not
+
+label [label]
+goto [label]
+if-goto [label]
+
+function [functionName] [nVars]
+call [functionName] [nArgs]
+return
+"""
+
+
+
+
 class Compiler:
-    def __init__(self, tokens: List[Element]):
+    def __init__(self, tokens: Optional[List[Element]] = None, code: Optional[str] = None):
         self.idx = 0
+
+        if tokens is None:
+            assert code is not None
+            tokens = tokenize(code)
+        else:
+            assert code is None
+        
         self.tokens: List[Element] = tokens
         self.static_symbols: SymbolTable = SymbolTable()
         self.local_symbols: SymbolTable = SymbolTable()
@@ -241,6 +278,13 @@ class Compiler:
     def compile_subroutine_body(self) -> Element:
         """
         '{' varDec* statements '}'
+        
+        Generates VM code for the body of a subroutine.
+        
+        Example input:
+        {
+            
+        }
         """
         logging.info("subroutineBody")
         elems: List[Element] = []
@@ -260,6 +304,11 @@ class Compiler:
     def compile_var_dec(self) -> Element:
         """
         'var' type varName (',' varName)* ';'
+        
+        Insert a variable into the symbol table.
+
+        Returns:
+            None
         """
         logging.info("varDec")
         elems: List[Element] = []
@@ -388,8 +437,10 @@ class Compiler:
         elems: List[Element] = []
 
         elems.append(self.next("keyword", "do"))
-        # elems.append(self.compile_subroutine_call()) # not separate element in the grammar
-        elems.extend(self.compile_subroutine_call().content)
+
+        subroutine_result = self.compile_subroutine_call()
+        assert isinstance(subroutine_result.content, List)
+        elems.extend(subroutine_result.content)
         elems.append(self.next("symbol", ";"))
 
         return Element("doStatement", elems)
@@ -420,9 +471,14 @@ class Compiler:
 
         elems.append(self.compile_term())
 
+        # something should be on the stack
+
         while self.peek("symbol", ("+", "-", "*", "/", "&", "|", "<", ">", "=")):
             elems.append(self.next())
             elems.append(self.compile_term())
+
+            # put the term's value on the stack
+            # do the correct operation
 
         return Element("expression", elems)
 
@@ -430,7 +486,39 @@ class Compiler:
         """
         integerConstant | stringConstant | keywordConstant | varName |
         varName '[' expression ']' | '(' expression ')' | (unaryOp term) | subroutineCall
+
+        This will push a value onto the stack.
         """
+
+        # integer constant:
+        # push constant [value]
+        #
+        # string constant:
+        # call the String constructor
+        # for each char in the constant, call String.appendChar
+        # TODO: figure out what precisely that means
+        #
+        # 
+        #
+        # keywordConstant:
+        # push constant [value]
+        #
+        # varName:
+        # push (static | local) varName
+        # 
+        # varName[expr]:
+        # ???
+        #
+        # ( expression ):
+        # compile_expression() handles it, leaves stuff on the stack
+        #
+        # unaryOp term:
+        # compile_term() for the term; then the op
+        #
+        # subroutine call:
+        # compile_subroutine_call()
+
+
         logging.info("term")
         elems: List[Element] = []
 
@@ -479,6 +567,8 @@ class Compiler:
         """
         subroutineName '(' expressionList ')' | (className | varName) '.' subroutineName
         '(' expressionList ')'
+
+        Leave the result on the stack
         """
         logging.info("subroutine")
         elems: List[Element] = []
