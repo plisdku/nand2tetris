@@ -331,5 +331,38 @@ def test_if_else_statement():
 
     assert out == expected
 
+def test_while_statement():
+    """
+    Test while statement
+    """
+
+    jack = dedent("""
+        while (1) {
+            let x = 3;
+        }
+    """)
+
+    c = Compiler(code=jack)
+    c.local_symbols.insert("x", "var", "int")
+    out = "\n".join(c.compile_statement())
+
+    expected = dedent("""
+        label WHILE_START_0
+        push constant 1
+        not
+        if-goto WHILE_END_0
+        push constant 3
+        pop local 0
+        goto WHILE_START_0
+        label WHILE_END_0
+    """).strip()
+
+    assert out == expected
+
+
+
+
+
+
 
 #
