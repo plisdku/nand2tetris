@@ -268,6 +268,8 @@ class Compiler:
         ('constructor' | 'function' | 'method') ('void' | type) subroutineName
         '(' parameterList ')' subroutineBody
         """
+
+        assert False
         logging.info("subroutineDec")
 
         self.local_symbols.reset()
@@ -302,6 +304,8 @@ class Compiler:
         """
         ( (type varName) (',' type varName)* )?
         """
+
+        assert False
         logging.info("parameterList")
         lines: List[str] = []
 
@@ -335,6 +339,7 @@ class Compiler:
         
         Generates VM code for the body of a subroutine.
         """
+        assert False
         logging.info("subroutineBody")
         lines: List[str] = []
 
@@ -384,7 +389,7 @@ class Compiler:
         # return Element("varDec", elems)
         return lines
 
-    def compile_statements(self) -> List[str]:
+    def compile_statements(self) -> List[str]: # TESTED
         """
         statement*
         """
@@ -402,18 +407,20 @@ class Compiler:
         letStatement | ifStatement | whileStatement | doStatement | returnStatement
         """
         logging.info("statement")
-        if self.peek("keyword", "let"):
+        if self.peek("keyword", "let"): # TESTED
             return self.compile_let_statement()
-        elif self.peek("keyword", "if"):
+        elif self.peek("keyword", "if"): # TESTED
             return self.compile_if_statement()
-        elif self.peek("keyword", "while"):
+        elif self.peek("keyword", "while"): # TESTED
             return self.compile_while_statement()
         elif self.peek("keyword", "do"):
+            assert False
             return self.compile_do_statement()
         else:
+            assert False
             return self.compile_return_statement()
 
-    def compile_let_statement(self) -> List[str]:
+    def compile_let_statement(self) -> List[str]: # TESTED
         """
         'let' varName ('[' expression ']')? '=' expression ';'
         """
@@ -471,7 +478,7 @@ class Compiler:
 
         return lines
 
-    def compile_if_statement(self) -> List[str]:
+    def compile_if_statement(self) -> List[str]: # TESTED
         """
         'if' '(' expression ')' '{' statements '}' ('else' '{' statements '}')?
         """
@@ -513,7 +520,7 @@ class Compiler:
 
         return lines
 
-    def compile_while_statement(self) -> List[str]:
+    def compile_while_statement(self) -> List[str]: # TESTED
         """
         'while' '(' expression ')' '{' statements '}'
         """
@@ -545,6 +552,7 @@ class Compiler:
         """
         'do' subroutineCall ';'
         """
+        assert False
         logging.info("do")
         lines: List[str] = []
 
@@ -567,8 +575,10 @@ class Compiler:
         self.next("keyword", "return")
 
         if self.peek("symbol", ";"):
+            assert False
             self.next()
         else:
+            assert False
             self.compile_expression()
             self.next("symbol", ";")
 
