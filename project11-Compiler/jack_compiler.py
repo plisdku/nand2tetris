@@ -581,9 +581,8 @@ class Compiler:
             lines.append(f"label {if_end}")
         else:
             lines.extend(condition)
-            lines.append(f"if-goto {if_true}")
-            lines.append(f"goto {if_end}")
-            lines.append(f"label {if_true}")
+            lines.append("not")
+            lines.append(f"if-goto {if_end}")
             lines.extend(if_statements)
             lines.append(f"label {if_end}")
 

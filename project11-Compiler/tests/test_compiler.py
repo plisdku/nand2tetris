@@ -292,6 +292,8 @@ def test_let_statement_scalar():
 def test_if_statement_without_else():
     """
     Test if statement.
+
+    I'm using the NOT conditional method.
     """
 
     jack = dedent("""
@@ -306,9 +308,8 @@ def test_if_statement_without_else():
 
     expected = dedent("""
         push constant 1
-        if-goto IF_TRUE_0
-        goto IF_END_0
-        label IF_TRUE_0
+        not
+        if-goto IF_END_0
         push constant 3
         pop local 0
         label IF_END_0
