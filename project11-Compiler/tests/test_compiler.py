@@ -1,3 +1,4 @@
+import pytest
 from jack_compiler import compile_jack, Compiler, CompilerError
 from textwrap import dedent
 from symbol_table import Symbol
@@ -193,8 +194,19 @@ def test_expression_multiply_divide():
     assert out == expected
 
 
-
-
+@pytest.mark.parametrize(
+    "jack,expected",
+    [
+        ("true", "push constant 0\nnot"),
+        ("false", "push constant 0"),
+        ("null", "push constant 0"),
+        ("this", "push pointer 0"),
+    ],
+)
+def test_keyword_expression(jack: str, expected: str):
+    c = Compiler(code=jack)
+    out = "\n".join(c.compile_expression())
+    assert out == expected
 
 
 

@@ -587,7 +587,14 @@ class Compiler:
         elif self.peek("keyword", ("true", "false", "null", "this")):
             constant = self.next()
             assert isinstance(constant.content, str)
-            raise Exception(f"Unimplemented constant {constant.content}")
+
+            if constant.content == "true":
+                lines.extend(["push constant 0", "not"])
+            elif constant.content in ("false", "null"):
+                lines.append("push constant 0")
+            else:
+                assert constant.content == "this"
+                lines.append("push pointer 0")
 
         elif self.peek("identifier"):
             # Could be varName, varName[expression], or subroutineCall
