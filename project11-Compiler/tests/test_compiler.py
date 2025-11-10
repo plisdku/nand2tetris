@@ -490,7 +490,41 @@ def test_function_call():
 
     assert out == expected
 
-test_function_call()
+
+def test_method_on_object():
+    jack = dedent("""
+        let x = something.release(1)
+    """)
+
+    c = Compiler(code=jack)
+    c.local_symbols.insert("x", "var", "int")
+    c.local_symbols.insert("something", "var", "Something")
+
+    out = "\n".join(c.compile_statement())
+
+    expected = dedent("""
+        push constant 1
+        push local 1
+        call Something.release 1
+        pop local 0
+    """).strip()
+
+    print(out)
+    print("-"*20)
+    print(expected)
+
+test_method_on_object()
+
+
+
+
+
+
+
+
+
+
+
 
 
 
