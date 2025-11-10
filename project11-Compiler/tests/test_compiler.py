@@ -493,7 +493,7 @@ def test_call_function():
 
 def test_call_method_on_object():
     jack = dedent("""
-        let x = something.release(1)
+        let x = something.release(2);
     """)
 
     c = Compiler(code=jack)
@@ -502,20 +502,17 @@ def test_call_method_on_object():
 
     out = "\n".join(c.compile_statement())
 
+    # First "push local 1" makes "something" the "this" variable.
+    # Then "push constant 2" is the argument.
+    # Since "this" is implicitly an argument, "call" states there are 2 args.
     expected = dedent("""
-        push constant 1
         push local 1
-        call Something.release 1
+        push constant 2
+        call Something.release 2
         pop local 0
     """).strip()
 
-    print(out)
-    print("-"*20)
-    print(expected)
-
-test_call_method_on_object()
-
-
+    assert out == expected
 
 
 
