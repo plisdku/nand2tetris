@@ -514,9 +514,35 @@ def test_call_method_on_object():
 
     assert out == expected
 
+def test_call_method_on_implicit_this():
+    """
+    In a context where "this" is defined (i.e. in a constructor or in a method call),
+    call a method on "this" implicitly (without writing "this." in front of the method).
+
+    In any such context, "this" will be in the symbol table already, and argument 0
+    will be the base address of the current object.
+    """
+    jack = dedent("""
+        let x = brush_teeth(99, 100);
+    """)
+
+    c = Compiler(code=jack)
+    c.local_symbols.insert("this", "var", "Human") # this is a precondition for implicit this
+    c.local_symbols.insert("x", "var", "char")
+
+    out = "\n".join(c.compile_statement())
+
+    # We will push argument 0 (i.e. push "this") as the implicit first argument.
+    expected = dedent("""
+        push argument 0
+        push constant 99
+        push constant 100
+        call Human.brush_teeth 3
+        pop local 1
+    """).strip()
 
 
-
+test_call_method_on_implicit_this()
 
 
 

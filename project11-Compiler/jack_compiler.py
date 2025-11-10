@@ -790,9 +790,12 @@ class Compiler:
             expressions, num_expressions = self.compile_expression_list()
             self.next("symbol", ")")
 
+            # We retrieve the "this" symbol simply to get its TYPE.
+            this_symbol = self.get_symbol("this")
+
             lines.append("push argument 0")  # arg 0 is "this"
             lines.extend(expressions)
-            lines.append(f"call {func_name.content} {num_expressions+1}")
+            lines.append(f"call {this_symbol.type}.{func_name.content} {num_expressions+1}")
 
         else:
             # (className | varName) . subroutineName ( expressionList )
