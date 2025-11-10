@@ -119,6 +119,7 @@ class Compiler:
             return None
 
         token = self.tokens[self.idx + ahead - 1]
+
         if category is not None:
             if isinstance(category, str):
                 if token.category != category:
@@ -618,10 +619,9 @@ class Compiler:
                 lines.extend(self.compile_expression())
                 self.next("symbol", "]")
 
-                lines.append(remove_whitespace(f"""
-                    pop pointer 1     // save address as THAT
-                    push that         // value of THAT goes on stack
-                """))
+                lines.append("add") # add array base address to expression result
+                lines.append("pop pointer 1")
+                lines.append("push that 0")
             else:
                 # varName
                 var_name = self.next("identifier")

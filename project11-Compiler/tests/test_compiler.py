@@ -204,12 +204,32 @@ def test_expression_multiply_divide():
     ],
 )
 def test_keyword_expression(jack: str, expected: str):
+    """
+    Test true, false, null, this.
+    """
     c = Compiler(code=jack)
     out = "\n".join(c.compile_expression())
     assert out == expected
 
 
+def test_array_expression():
+    """
+    Test array indexing, e.g. x[10]
+    """
 
+    c = Compiler(code="x[10]")
+    c.static_symbols.insert("x", "static", "int")
+    out = "\n".join(c.compile_expression())
+
+    expected = dedent("""
+        push static 0
+        push constant 10
+        add
+        pop pointer 1
+        push that 0
+    """).strip()
+
+    assert out == expected
 
 
 
