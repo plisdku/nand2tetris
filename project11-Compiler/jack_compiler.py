@@ -31,13 +31,13 @@ class CompilerError(Exception):
     pass
 
 
-def compile_jack(code: str) -> List[str]:
+def compile_jack(code: str) -> str:
     tokens = tokenize(code)
-    return compile_elements(tokens)
+    return "\n".join(compile_elements(tokens))
 
-def compile_elements(tokens: List[Element]) -> List[str]:
+def compile_elements(tokens: List[Element]) -> str:
     compiler = Compiler(tokens)
-    return compiler.compile_elements()
+    return "\n".join(compiler.compile_elements())
 
 
 """
@@ -61,6 +61,23 @@ call [functionName] [nArgs]
 return
 """
 
+
+BINARY_OPS_MAP = {
+    "+": "add",
+    "*": "call Math.multiply 2",
+    "/": "call Math.divide 2",
+    "-": "sub",
+    "=": "eq",
+    ">": "gt",
+    "lt": "lt",
+    "&": "and",
+    "|": "or",
+    "~": "not"
+}
+
+UNARY_OPS_MAP = {
+    "-": "neg"
+}
 
 
 
@@ -98,6 +115,8 @@ class Compiler:
         """
         Get the next element without advancing the cursor.
         """
+        if self.idx + ahead > len(self.tokens):
+            return None
 
         token = self.tokens[self.idx + ahead - 1]
         if category is not None:
@@ -353,7 +372,7 @@ class Compiler:
         lines: List[str] = []
 
         while self.peek("keyword", ("let", "if", "while", "do", "return")):
-            self.compile_statement()
+            lines.extend(self.compile_statement())
 
         # return Element("statements", elems)
         return lines
@@ -485,16 +504,19 @@ class Compiler:
         logging.info("expression")
         lines: List[str] = []
 
-        self.compile_term()
+        lines.extend(self.compile_term())
 
         # something should be on the stack
 
         while self.peek("symbol", ("+", "-", "*", "/", "&", "|", "<", ">", "=")):
-            self.next()
-            self.compile_term()
+            operator = self.next()
+            lines.extend(self.compile_term())
 
             # put the term's value on the stack
             # do the correct operation
+
+            assert isinstance(operator.content, str)
+            lines.append(BINARY_OPS_MAP[operator.content])
 
         # return Element("expression", elems)
         return lines
@@ -541,52 +563,75 @@ class Compiler:
 
         if self.peek(("integerConstant", "stringConstant")):
             constant = self.next()
+            assert isinstance(constant.content, str)
 
             if constant.category == "integerConstant":
-                lines.append(f"push constant {constant}")
+                lines.append(f"push constant {constant.content}")
             else:
                 assert isinstance(constant.content, str)
                 # the constructor pushes the address of the allocated
                 # memory block.
-                code = f"""
-                    call String.new({len(constant.content)})
-                """
+                lines.append(remove_whitespace(f"""
+                    push constant {len(constant.content)}
+                    call String.new 1
+                """))
+
+                for char in constant.content:
+                    # TODO: implement proper Hack character set, which isn't extended ASCII
+                    hack_code = ord(char)
+                    lines.append(remove_whitespace(f"""
+                        push constant {hack_code}
+                        call String.appendChar 1
+                    """))
 
         elif self.peek("keyword", ("true", "false", "null", "this")):
-            self.next()
+            constant = self.next()
+            assert isinstance(constant.content, str)
+            raise Exception(f"Unimplemented constant {constant.content}")
+
         elif self.peek("identifier"):
             # Could be varName, varName[expression], or subroutineCall
 
             if self.peek("symbol", ("(", "."), ahead=2):
                 # subroutineCall
-                # self.compile_subroutine_call()
-                subroutine_elem = self.compile_subroutine_call()
-                # assert isinstance(subroutine_elem.content, List)
+
+                subroutine_lines = self.compile_subroutine_call()
+                lines.extend(subroutine_lines)
             elif self.peek("symbol", "[", ahead=2):
                 # varName[expression]
-                var_name = self.next("identifier")
 
+                var_name = self.next("identifier")
                 assert isinstance(var_name.content, str)
-                log.info(f"var [] reference: {self.get_symbol(var_name.content)}")
+                symbol = self.get_symbol(var_name.content)
+                log.info(f"var [] reference: {symbol}")
+
+                lines.append(f"push {symbol.kind} {symbol.index}")
 
                 self.next("symbol", "[")
-                self.compile_expression()
+                lines.extend(self.compile_expression())
                 self.next("symbol", "]")
+
+                lines.append(remove_whitespace(f"""
+                    pop pointer 1     // save address as THAT
+                    push that         // value of THAT goes on stack
+                """))
             else:
                 # varName
                 var_name = self.next("identifier")
-
                 assert isinstance(var_name.content, str)
-                log.info(f"var reference: {self.get_symbol(var_name.content)}")
+                symbol = self.get_symbol(var_name.content)
+                log.info(f"var reference: {symbol}")
+
+                lines.append(f"push {symbol.kind} {symbol.index}")
+
         elif self.peek("symbol", "("):
             self.next()
-            self.compile_expression()
+            lines.extend(self.compile_expression())
             self.next("symbol", ")")
         else:
             self.next("symbol", ("-", "~"))
-            self.compile_term()
+            lines.extend(self.compile_term())
 
-        # return Element("term", elems)
         return lines
 
     def compile_subroutine_call(self) -> List[str]:

@@ -4,7 +4,7 @@ from symbol_table import Symbol
 
 def test_var_dec_two_ints():
     """
-    
+    Declaer two int-valued local variables.
     """
 
     jack = dedent("""
@@ -25,7 +25,7 @@ def test_var_dec_two_ints():
 
 def test_var_dec_char():
     """
-    
+    Declare a char local variable.
     """
 
     jack = dedent("""
@@ -44,6 +44,9 @@ def test_var_dec_char():
 
 
 def test_var_dec_class():
+    """
+    Declare a local variable of type Unicorn.
+    """
     jack = dedent("""
         var Unicorn xyzzy;
     """)
@@ -60,6 +63,9 @@ def test_var_dec_class():
 
 
 def test_class_var_dec_two_fields():
+    """
+    Declare two char-valued fields.
+    """
     jack = dedent("""
         field char ww, zz;
     """)
@@ -76,6 +82,9 @@ def test_class_var_dec_two_fields():
     assert c.static_symbols["zz"] == Symbol("zz", "field", "char", 1)
 
 def test_class_var_dec_static():
+    """
+    Declare a static variable of type Orb.
+    """
 
     jack = dedent("""
         static Orb round_guy;
@@ -92,3 +101,46 @@ def test_class_var_dec_static():
     assert c.static_symbols["round_guy"] == Symbol("round_guy", "static", "Orb", 0)
 
 
+def test_expression_arithmetic():
+    """
+    Test some simple arithmetic expressions.
+    """
+
+    jack = "1+2"
+
+    c = Compiler(code=jack)
+    out = "\n".join(c.compile_expression())
+    expected = dedent("""
+        push constant 1
+        push constant 2
+        add
+    """).strip()
+
+    assert out == expected
+
+
+def test_expression_string():
+    """
+    A string all by itself
+    """
+
+    jack = '"hello"'   # codes: 104 101 108 108 111
+
+    c = Compiler(code=jack)
+    out = "\n".join(c.compile_expression())
+    expected = dedent(f"""
+        push constant {len('hello')}
+        call String.new 1
+        push constant 104
+        call String.appendChar 1
+        push constant 101
+        call String.appendChar 1
+        push constant 108
+        call String.appendChar 1
+        push constant 108
+        call String.appendChar 1
+        push constant 111
+        call String.appendChar 1
+    """).strip()
+
+    assert out == expected
