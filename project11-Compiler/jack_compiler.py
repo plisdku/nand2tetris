@@ -88,6 +88,16 @@ UNARY_OPS_MAP = {
 }
 
 
+class Labeler:
+    def __init__(self, prefix: str):
+        self.prefix: str = prefix
+        self.count: int = 0
+
+    def new(self) -> str:
+        label = f"{self.prefix}_{self.count}"
+        self.count += 1
+        return label
+
 
 class Compiler:
     def __init__(self, tokens: Optional[List[Element]] = None, code: Optional[str] = None):
@@ -103,12 +113,18 @@ class Compiler:
         self.static_symbols: SymbolTable = SymbolTable()
         self.local_symbols: SymbolTable = SymbolTable()
 
+        self.if_true = Labeler("IF_TRUE")
+        self.if_false = Labeler("IF_FALSE")
+        self.if_end = Labeler("IF_END")
+        self.while_start = Labeler("WHILE_START")
+        self.while_end = Labeler("WHILE_END")
+
+
     def get_symbol(self, name: str) -> Symbol:
         if name in self.local_symbols:
             return self.local_symbols[name]
         else:
             return self.static_symbols[name]
-
 
     def compile_elements(self):
         self.idx = 0
@@ -464,20 +480,37 @@ class Compiler:
 
         self.next("keyword", "if")
         self.next("symbol", "(")
-        self.compile_expression()
+        condition = self.compile_expression()
         self.next("symbol", ")")
 
         self.next("symbol", "{")
-        self.compile_statements()
+        if_statements = self.compile_statements()
         self.next("symbol", "}")
+
+        if_true = self.if_true.new()
+        if_end = self.if_end.new()
 
         if self.peek("keyword", "else"):
             self.next()
             self.next("symbol", "{")
-            self.compile_statements()
+            else_statements = self.compile_statements()
             self.next("symbol", "}")
 
-        # return Element("ifStatement", elems)
+            lines.extend(condition)
+            lines.append(f"if-goto {if_true}")
+            lines.extend(else_statements)
+            lines.append(f"goto {if_end}")
+            lines.append(f"label {if_true}")
+            lines.extend(if_statements)
+            lines.append(f"label {if_end}")
+        else:
+            lines.extend(condition)
+            lines.append(f"if-goto {if_true}")
+            lines.append(f"goto {if_end}")
+            lines.append(f"label {if_true}")
+            lines.extend(if_statements)
+            lines.append(f"label {if_end}")
+
         return lines
 
     def compile_while_statement(self) -> List[str]:
@@ -489,13 +522,23 @@ class Compiler:
 
         self.next("keyword", "while")
         self.next("symbol", "(")
-        self.compile_expression()
+        condition = self.compile_expression()
         self.next("symbol", ")")
         self.next("symbol", "{")
-        self.compile_statements()
+        while_statements = self.compile_statements()
         self.next("symbol", "}")
 
-        # return Element("whileStatement", elems)
+        while_start = self.while_start.new()
+        while_end = self.while_end.new()
+
+        lines.append(f"label {while_start}")
+        lines.extend(condition)
+        lines.append("not")
+        lines.append(f"if-goto {while_end}")
+        lines.extend(while_statements)
+        lines.append(f"goto {while_start}")
+        lines.append(f"label {while_end}")
+
         return lines
 
     def compile_do_statement(self) -> List[str]:
@@ -506,13 +549,12 @@ class Compiler:
         lines: List[str] = []
 
         self.next("keyword", "do")
-
-        subroutine_result = self.compile_subroutine_call()
-        # assert isinstance(subroutine_result.content, List)
-        # subroutine_result.content
+        subroutine = self.compile_subroutine_call()
         self.next("symbol", ";")
 
-        # return Element("doStatement", elems)
+        lines.extend(subroutine)
+        lines.append("pop temp 0")  # dump the unwanted result
+
         return lines
 
     def compile_return_statement(self) -> List[str]:

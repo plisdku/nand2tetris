@@ -271,6 +271,65 @@ def test_let_statement_scalar():
     assert out == expected
 
 
+def test_if_statement_without_else():
+    """
+    Test if statement.
+    """
+
+    jack = dedent("""
+        if (1) {
+            let x = 3;
+        }
+    """)
+
+    c = Compiler(code = jack)
+    c.local_symbols.insert("x", "var", "int")
+    out = "\n".join(c.compile_statement())
+
+    expected = dedent("""
+        push constant 1
+        if-goto IF_TRUE_0
+        goto IF_END_0
+        label IF_TRUE_0
+        push constant 3
+        pop local 0
+        label IF_END_0
+    """).strip()
+
+    assert out == expected
+
+
+def test_if_else_statement():
+    """
+    Test if-else statement.
+    """
+
+    jack = dedent("""
+        if (1) {
+            let x = 3;
+        }
+        else {
+            let x = 4;
+        }
+    """)
+
+    c = Compiler(code = jack)
+    c.local_symbols.insert("x", "var", "int")
+    out = "\n".join(c.compile_statement())
+
+    expected = dedent("""
+        push constant 1
+        if-goto IF_TRUE_0
+        push constant 4
+        pop local 0
+        goto IF_END_0
+        label IF_TRUE_0
+        push constant 3
+        pop local 0
+        label IF_END_0
+    """).strip()
+
+    assert out == expected
 
 
 #
