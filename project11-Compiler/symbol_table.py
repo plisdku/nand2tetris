@@ -1,7 +1,7 @@
 import dataclasses
 from typing import Any, Dict, Iterator, Literal
 
-KIND = Literal["static", "field", "arg", "var"]
+KIND = Literal["static", "this", "arg", "var"]
 
 @dataclasses.dataclass
 class Symbol:
@@ -70,8 +70,8 @@ class SymbolTable:
             Symbol(name='x', kind='static', type='int', index=0)
             >>> table.insert("y", "static", "char")
             Symbol(name='y', kind='static', type='char', index=1)
-            >>> table.insert("z", "field", "int")
-            Symbol(name='z', kind='field', type='int', index=0)
+            >>> table.insert("z", "this", "int")
+            Symbol(name='z', kind='this', type='int', index=0)
         """
 
         if name in self.symbols:
@@ -93,7 +93,7 @@ class SymbolTable:
             >>> symbol = table.insert("x", "static", "int")
             >>> table.count("static")
             1
-            >>> table.count("field")
+            >>> table.count("this")
             0
         """
         return self.count_by_kind.get(kind, 0)
