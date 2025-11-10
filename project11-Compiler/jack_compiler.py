@@ -33,7 +33,7 @@ class CompilerError(Exception):
 
 def compile_jack(code: str) -> str:
     tokens = tokenize(code)
-    return "\n".join(compile_elements(tokens))
+    return compile_elements(tokens)
 
 def compile_elements(tokens: List[Element]) -> str:
     compiler = Compiler(tokens)
@@ -318,11 +318,6 @@ class Compiler:
         '{' varDec* statements '}'
         
         Generates VM code for the body of a subroutine.
-        
-        Example input:
-        {
-            
-        }
         """
         logging.info("subroutineBody")
         lines: List[str] = []

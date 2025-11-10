@@ -5,7 +5,7 @@ import logging
 from jack_paths import handle_jack_vm_paths
 from jack_tokenizer import tokenize, read_xml
 from jack_analyzer import write_element_xml_lines, analyze
-from jack_compiler import compile_elements
+from jack_compiler import compile_elements, compile_jack
 
 # logging.basicConfig(
 #     level=logging.INFO,
@@ -38,18 +38,12 @@ def main():
         _out.parent.mkdir(parents=True, exist_ok=True)
 
         if _in.suffix == ".jack":
-            # Tokenize the jack
-            tokens = tokenize(_in.read_text())
+            vm_code = compile_jack(_in.read_text())
+            print(vm_code)
         else:
             tokens = None
+            print("Unimplemented weirdness")
 
-        if tokens is not None:
-            parse_tree_elements = analyze(tokens)
-
-            # import rich
-            # rich.print(parse_tree_elements)
-
-            compile_elements(tokens) #[parse_tree_elements])
 
             # 
             # _out.write_text("\n".join(xml_lines))

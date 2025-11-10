@@ -231,7 +231,7 @@ def test_array_expression():
 
     assert out == expected
 
-def test_set_array_value():
+def test_let_statement_vector():
     """
     Test set value to array, x[10] = 1
     """
@@ -249,17 +249,26 @@ def test_set_array_value():
         pop pointer 1
         push temp 0
         pop that 0
-
     """).strip()
-
-    # print(out)
-    # print("-"*20)
-    # print(expected)
 
     assert out == expected
 
-# test_set_array_value()
 
+def test_let_statement_scalar():
+    """
+    Test set value to scalar, z = 10
+    """
+
+    c = Compiler(code="let z = 10;")
+    c.local_symbols.insert("z", "var", "int")
+    out = "\n".join(c.compile_statement())
+
+    expected = dedent("""
+        push constant 10
+        pop local 0
+    """).strip()
+
+    assert out == expected
 
 
 
