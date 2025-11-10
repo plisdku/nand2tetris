@@ -7,7 +7,7 @@ from jack_tokenizer import escape_token, tokenize
 from symbol_table import SymbolTable, KIND, Symbol
 
 logging.basicConfig(
-    level=logging.WARNING,
+    level=logging.INFO,
     format="%(levelname)s:%(funcName)s: %(message)s"
 )
 log = logging.getLogger(__name__)
@@ -292,7 +292,7 @@ class Compiler:
         lines: List[str] = []
 
         # Add "this" to symbol table
-        self.local_symbols.insert("this", "var", class_name)
+        self.local_symbols.insert("this", "arg", class_name)
 
         self.next("keyword", "constructor")
         return_type = self.next("identifier")
@@ -313,7 +313,7 @@ class Compiler:
         # Determine how many fields to allocate
         num_fields = self.static_symbols.count("field")
 
-        lines.append(f"function {class_name}.{subroutine_name.content} {self.local_symbols.count('arg')}")
+        lines.append(f"function {class_name}.{subroutine_name.content} {self.local_symbols.count('var')}")
         lines.append(f"push constant {num_fields}")
         lines.append("call Memory.alloc 1")
         lines.append("pop pointer 0") # set "this" to whatever came back from alloc()
@@ -331,7 +331,7 @@ class Compiler:
         lines: List[str] = []
 
         # Add "this" to symbol table
-        self.local_symbols.insert("this", "var", class_name)
+        self.local_symbols.insert("this", "arg", class_name)
 
         self.next("keyword", "method")
         self.next("keyword", ("void", "int", "char", "boolean")) # return type
@@ -347,7 +347,7 @@ class Compiler:
 
         body = self.compile_subroutine_body()
 
-        lines.append(f"function {class_name}.{subroutine_name.content} {self.local_symbols.count('arg')+1}")
+        lines.append(f"function {class_name}.{subroutine_name.content} {self.local_symbols.count('var')}")
         lines.append("push argument 0") # get value for THIS pointer
         lines.append("pop pointer 0") # set THIS pointer
         lines.extend(body)
@@ -372,7 +372,8 @@ class Compiler:
 
         body = self.compile_subroutine_body()
 
-        lines.append(f"function {class_name}.{subroutine_name.content} {self.local_symbols.count('arg')}")
+        # function f nVars
+        lines.append(f"function {class_name}.{subroutine_name.content} {self.local_symbols.count('var')}")
         lines.extend(body)
         return lines
 
@@ -601,6 +602,10 @@ class Compiler:
         self.next("symbol", ")")
         self.next("symbol", "{")
         while_statements = self.compile_statements()
+        import rich
+        print("==== Inner")
+        rich.print(while_statements)
+        print("====")
         self.next("symbol", "}")
 
         while_start = self.while_start.new()
@@ -613,6 +618,11 @@ class Compiler:
         lines.extend(while_statements)
         lines.append(f"goto {while_start}")
         lines.append(f"label {while_end}")
+
+        import rich
+        print("==== Outer")
+        rich.print(lines)
+        print("====")
 
         return lines
 
@@ -708,7 +718,7 @@ class Compiler:
                     hack_code = ord(char)
                     lines.append(remove_whitespace(f"""
                         push constant {hack_code}
-                        call String.appendChar 1
+                        call String.appendChar 2
                     """))
 
         elif self.peek("keyword", ("true", "false", "null", "this")): # TESTED
