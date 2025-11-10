@@ -315,7 +315,7 @@ class Compiler:
 
         # Determine how many fields to allocate
         num_fields = self.static_symbols.count("field")
-        
+
         lines.append(f"function {class_name}.{subroutine_name.content} {self.local_symbols.count('arg')}")
         lines.append(f"push constant {num_fields}")
         lines.append("call Memory.alloc 1")
@@ -486,7 +486,6 @@ class Compiler:
         elif self.peek("keyword", "while"): # TESTED
             return self.compile_while_statement()
         elif self.peek("keyword", "do"):
-            assert False
             return self.compile_do_statement()
         else:
             return self.compile_return_statement()
@@ -622,7 +621,6 @@ class Compiler:
         """
         'do' subroutineCall ';'
         """
-        assert False
         logging.info("do")
         lines: List[str] = []
 

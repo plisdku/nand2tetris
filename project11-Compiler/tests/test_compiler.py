@@ -546,10 +546,23 @@ def test_call_method_on_implicit_this():
     assert out == expected
 
 
+def test_do_statement():
 
+    jack = dedent("""
+        do Math.multiply(1,2);
+    """)
 
+    c = Compiler(code=jack)
+    out = "\n".join(c.compile_statement())
 
+    expected = dedent("""
+        push constant 1
+        push constant 2
+        call Math.multiply 2
+        pop temp 0
+    """).strip()
 
+    assert out == expected
 
 
 
