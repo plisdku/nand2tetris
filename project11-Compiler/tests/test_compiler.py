@@ -404,6 +404,8 @@ def test_compile_class():
 
     assert out == expected
 
+test_compile_class()
+
 def test_compile_function():
     """
     Compile a function!
@@ -541,8 +543,8 @@ def test_call_method_on_implicit_this():
         pop local 1
     """).strip()
 
+    assert out == expected
 
-test_call_method_on_implicit_this()
 
 
 

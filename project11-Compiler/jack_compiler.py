@@ -288,6 +288,9 @@ class Compiler:
     def compile_constructor_dec(self, class_name: str) -> List[str]:
         """
         'constructor' type subroutineName '(' parameterList ')' subroutineBody
+
+        We need to add "this" to the symbol table, so we can get its type later in case
+        of implicit method calls.
         """
         lines: List[str] = []
 
@@ -307,10 +310,13 @@ class Compiler:
 
         body = self.compile_subroutine_body()
 
+        # Add "this" to symbol table
+        self.local_symbols.insert("this", "var", class_name)
+
         # Determine how many fields to allocate
         num_fields = self.static_symbols.count("field")
-
-        lines.append(f"function {class_name}.{subroutine_name.content} {len(parameters)}")
+        
+        lines.append(f"function {class_name}.{subroutine_name.content} {self.local_symbols.count('arg')}")
         lines.append(f"push constant {num_fields}")
         lines.append("call Memory.alloc 1")
         lines.append("pop pointer 0") # set "this" to whatever came back from alloc()
@@ -321,6 +327,9 @@ class Compiler:
     def compile_method_dec(self, class_name: str) -> List[str]:
         """
         'method' ('void' | type) subroutineName '(' parameterList ')' subroutineBody
+
+        We need to add "this" to the symbol table, so we can get its type later in case
+        of implicit method calls.
         """
         lines: List[str] = []
         self.next("keyword", "method")
@@ -336,6 +345,9 @@ class Compiler:
         self.next("symbol", ")")
 
         body = self.compile_subroutine_body()
+
+        # Add "this" to symbol table
+        self.local_symbols.insert("this", "var", class_name)
 
         lines.append(f"function {class_name}.{subroutine_name.content} {self.local_symbols.count('arg')}")
         lines.extend(body)
