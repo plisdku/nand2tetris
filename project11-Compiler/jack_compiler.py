@@ -77,7 +77,7 @@ BINARY_OPS_MAP = {
     "-": "sub",
     "=": "eq",
     ">": "gt",
-    "lt": "lt",
+    "<": "lt",
     "&": "and",
     "|": "or",
     "~": "not"
