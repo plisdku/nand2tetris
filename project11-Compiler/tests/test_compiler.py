@@ -384,7 +384,7 @@ def test_compile_class():
             field int x;
             static char y;
 
-            constructor Dinosaur new() {
+            constructor Dinosaur new(int z) {
                 return this;
             }
         }
@@ -394,7 +394,7 @@ def test_compile_class():
     out = "\n".join(c.compile_class())
 
     expected = dedent("""
-        function Dinosaur.new 0
+        function Dinosaur.new 1
         push constant 1
         call Memory.alloc 1
         pop pointer 0
@@ -403,6 +403,65 @@ def test_compile_class():
     """).strip()
 
     assert out == expected
+
+def test_compile_function():
+    """
+    Compile a function!
+    """
+    jack = dedent("""
+        class Dinosaur {
+            field int x;
+            static char y;
+
+            function int foo(int z) {
+                return 0;
+            }
+        }
+    """)
+
+    c = Compiler(code=jack)
+    out = "\n".join(c.compile_class())
+
+    expected = dedent("""
+        function Dinosaur.foo 1
+        push constant 0
+        return
+    """).strip()
+
+    assert out == expected
+
+
+def test_compile_void_method():
+    """
+    Compile a void method.
+
+    By convention, void methods actually return 0.
+    """
+    jack = dedent("""
+        class Dinosaur {
+            field int x;
+            static char y;
+
+            method void bar(int z) {
+                return;
+            }
+        }
+    """)
+
+    c = Compiler(code=jack)
+    out = "\n".join(c.compile_class())
+
+    expected = dedent("""
+        function Dinosaur.bar 1
+        push constant 0
+        return
+    """).strip()
+
+    assert out == expected
+
+
+
+
 
 
 

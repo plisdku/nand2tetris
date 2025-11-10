@@ -276,7 +276,7 @@ class Compiler:
         if self.peek("keyword", "constructor"):
             return self.compile_constructor_dec(class_name)
         elif self.peek("keyword", "function"):
-            return self.compile_function_dec()
+            return self.compile_function_dec(class_name)
         else:
             assert self.peek("keyword", "method")
             return self.compile_method_dec(class_name)
@@ -322,6 +322,7 @@ class Compiler:
         """
         'method' ('void' | type) subroutineName '(' parameterList ')' subroutineBody
         """
+        lines: List[str] = []
         self.next("keyword", "method")
         self.next("keyword", ("void", "int", "char", "boolean")) # return type
 
@@ -334,19 +335,34 @@ class Compiler:
         assert parameters == [] # no code, just symbol creation
         self.next("symbol", ")")
 
-        return self.compile_subroutine_body()
+        body = self.compile_subroutine_body()
 
-    def compile_function_dec(self) -> List[str]:
+        lines.append(f"function {class_name}.{subroutine_name.content} {self.local_symbols.count('arg')}")
+        lines.extend(body)
+        return lines
+
+    def compile_function_dec(self, class_name) -> List[str]:
         """
         'function' ('void' | type) subroutineName '(' parameterList ')' subroutineBody
         """
+        lines: List[str] = []
         self.next("keyword", "function")
         self.next("keyword", ("void", "int", "char", "boolean")) # return type
 
         subroutine_name = self.next("identifier")
         assert isinstance(subroutine_name.content, str)
 
-        return self.compile_subroutine_body()
+        # parameters
+        self.next("symbol", "(")
+        parameters = self.compile_parameter_list()
+        assert parameters == [] # no code, just symbol creation
+        self.next("symbol", ")")
+
+        body = self.compile_subroutine_body()
+
+        lines.append(f"function {class_name}.{subroutine_name.content} {self.local_symbols.count('arg')}")
+        lines.extend(body)
+        return lines
 
     def compile_parameter_list(self) -> List[str]:
         """
@@ -617,7 +633,8 @@ class Compiler:
         self.next("keyword", "return")
 
         if self.peek("symbol", ";"):
-            assert False
+            # by convention, void functions still return 0
+            lines.append("push constant 0")
             self.next()
         else:
             lines.extend(self.compile_expression())
