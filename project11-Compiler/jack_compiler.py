@@ -80,11 +80,11 @@ BINARY_OPS_MAP = {
     "<": "lt",
     "&": "and",
     "|": "or",
-    "~": "not"
 }
 
 UNARY_OPS_MAP = {
-    "-": "neg"
+    "-": "neg",
+    "~": "not"
 }
 
 
@@ -599,7 +599,7 @@ class Compiler:
         # return Element("expression", elems)
         return lines
 
-    def compile_term(self) -> List[str]:
+    def compile_term(self) -> List[str]:  # TESTED
         """
         integerConstant | stringConstant | keywordConstant | varName |
         varName '[' expression ']' | '(' expression ')' | (unaryOp term) | subroutineCall
@@ -634,7 +634,6 @@ class Compiler:
         #
         # subroutine call:
         # compile_subroutine_call()
-
 
         logging.info("term")
         lines: List[str] = []
@@ -713,8 +712,10 @@ class Compiler:
             lines.extend(self.compile_expression())
             self.next("symbol", ")")
         else:
-            self.next("symbol", ("-", "~"))
+            operator = self.next("symbol", ("-", "~"))
+            assert isinstance(operator.content, str)
             lines.extend(self.compile_term())
+            lines.append(f"{UNARY_OPS_MAP[operator.content]}")
 
         return lines
 
@@ -732,7 +733,7 @@ class Compiler:
             # subroutineName
             self.next("identifier")
             self.next("symbol", "(")
-            self.compile_expression_list()
+            expressions = self.compile_expression_list()
             self.next("symbol", ")")
         else:
             # (className | varName) . subroutineName ( expressionList )
@@ -742,10 +743,10 @@ class Compiler:
             self.next("symbol", ".")
             self.next("identifier")
             self.next("symbol", "(")
-            self.compile_expression_list()
+            expressions = self.compile_expression_list()
             self.next("symbol", ")")
 
-        # return Element("subroutineCall", elems)
+
         return lines
 
     def compile_expression_list(self) -> List[str]:
@@ -759,13 +760,12 @@ class Compiler:
             return []
             # return Element("expressionList", elems)
 
-        self.compile_expression()
+        lines.extend(self.compile_expression())
 
         while self.peek("symbol", ","):
             self.next()
-            self.compile_expression()
+            lines.extend(self.compile_expression())
 
-        # return Element("expressionList", elems)
         return lines
 
 

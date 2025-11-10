@@ -231,6 +231,24 @@ def test_array_expression():
 
     assert out == expected
 
+
+@pytest.mark.parametrize("op,vm_op", [
+    ("-", "neg"),
+    ("~", "not"),
+])
+def test_unary_expression(op: str, vm_op: str):
+    """
+    Unary expressions like -1, ~1
+    """
+    c = Compiler(code=f"{op}1")
+    out = "\n".join(c.compile_expression())
+    expected = dedent(f"""
+        push constant 1
+        {vm_op}
+    """).strip()
+    assert out == expected
+
+
 def test_let_statement_vector():
     """
     Test set value to array, x[10] = 1
