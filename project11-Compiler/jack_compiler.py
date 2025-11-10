@@ -661,7 +661,7 @@ class Compiler:
                         call String.appendChar 1
                     """))
 
-        elif self.peek("keyword", ("true", "false", "null", "this")):
+        elif self.peek("keyword", ("true", "false", "null", "this")): # TESTED
             constant = self.next()
             assert isinstance(constant.content, str)
 
@@ -677,11 +677,12 @@ class Compiler:
             # Could be varName, varName[expression], or subroutineCall
 
             if self.peek("symbol", ("(", "."), ahead=2):
+                assert False
                 # subroutineCall
 
                 subroutine_lines = self.compile_subroutine_call()
                 lines.extend(subroutine_lines)
-            elif self.peek("symbol", "[", ahead=2):
+            elif self.peek("symbol", "[", ahead=2): # TESTED
                 # varName[expression]
 
                 var_name = self.next("identifier")
@@ -698,7 +699,7 @@ class Compiler:
                 lines.append("add") # add array base address to expression result
                 lines.append("pop pointer 1")
                 lines.append("push that 0")
-            else:
+            else: # TESTED
                 # varName
                 var_name = self.next("identifier")
                 assert isinstance(var_name.content, str)
@@ -707,11 +708,12 @@ class Compiler:
 
                 lines.append(f"push {SEGMENT_FOR_KIND[symbol.kind]} {symbol.index}")
 
-        elif self.peek("symbol", "("):
+        elif self.peek("symbol", "("): # TESTED
             self.next()
             lines.extend(self.compile_expression())
             self.next("symbol", ")")
         else:
+            # tested
             operator = self.next("symbol", ("-", "~"))
             assert isinstance(operator.content, str)
             lines.extend(self.compile_term())
