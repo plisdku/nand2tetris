@@ -461,6 +461,37 @@ def test_compile_void_method():
 
 
 
+# Cases:
+#
+# Math.mult(1,2)                # function
+# some_string.appendChar("a")   # method on some_string
+# release()                     # method on this
+
+def test_function_call():
+    """
+    """
+
+    jack = dedent("""
+        let x = ClassName.foo(1, 2, 3);
+    """)
+
+    c = Compiler(code=jack)
+    c.local_symbols.insert("x", "var", "int")
+
+    out = "\n".join(c.compile_statement())
+
+    expected = dedent("""
+        push constant 1
+        push constant 2
+        push constant 3
+        call ClassName.foo 3
+        pop local 0
+    """).strip()
+
+    assert out == expected
+
+test_function_call()
+
 
 
 

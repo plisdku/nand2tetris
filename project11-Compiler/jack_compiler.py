@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Collection, List, Optional, cast
+from typing import Collection, List, Optional, Tuple, cast
 from jack_element import Element
 from jack_tokenizer import escape_token, tokenize
 from symbol_table import SymbolTable, KIND, Symbol
@@ -623,7 +623,7 @@ class Compiler:
 
         return lines
 
-    def compile_return_statement(self) -> List[str]:
+    def compile_return_statement(self) -> List[str]: # TESTED
         """
         'return' expression? ';'
         """
@@ -645,7 +645,7 @@ class Compiler:
 
         return lines
 
-    def compile_expression(self) -> List[str]:
+    def compile_expression(self) -> List[str]: # TESTED
         """
         term (op term)*
         """
@@ -666,7 +666,6 @@ class Compiler:
             assert isinstance(operator.content, str)
             lines.append(BINARY_OPS_MAP[operator.content])
 
-        # return Element("expression", elems)
         return lines
 
     def compile_term(self) -> List[str]:  # TESTED
@@ -676,34 +675,6 @@ class Compiler:
 
         This will push a value onto the stack.
         """
-
-        # integer constant:
-        # push constant [value]
-        #
-        # string constant:
-        # call the String constructor
-        # for each char in the constant, call String.appendChar
-        # TODO: figure out what precisely that means
-        #
-        # 
-        #
-        # keywordConstant:
-        # push constant [value]
-        #
-        # varName:
-        # push (static | local) varName
-        # 
-        # varName[expr]:
-        # ???
-        #
-        # ( expression ):
-        # compile_expression() handles it, leaves stuff on the stack
-        #
-        # unaryOp term:
-        # compile_term() for the term; then the op
-        #
-        # subroutine call:
-        # compile_subroutine_call()
 
         logging.info("term")
         lines: List[str] = []
@@ -747,7 +718,6 @@ class Compiler:
             # Could be varName, varName[expression], or subroutineCall
 
             if self.peek("symbol", ("(", "."), ahead=2):
-                assert False
                 # subroutineCall
 
                 subroutine_lines = self.compile_subroutine_call()
@@ -796,49 +766,94 @@ class Compiler:
         subroutineName '(' expressionList ')' | (className | varName) '.' subroutineName
         '(' expressionList ')'
 
-        Leave the result on the stack
+        Jack features two kinds of method call:
+
+            varName.method(...)
+            method(...)
+
+        The second one has "this" implicitly as the variable.
         """
         logging.info("subroutine")
         lines: List[str] = []
 
         if self.peek("symbol", "(", ahead=2):
             # subroutineName
-            self.next("identifier")
+
+            # This one implicitly calls this.something().
+            # We push "this" manually as an argument, and add one
+            # to the number of args in the call statement.
+
+            func_name = self.next("identifier")
+            assert isinstance(func_name.content, str)
+
             self.next("symbol", "(")
-            expressions = self.compile_expression_list()
+            expressions, num_expressions = self.compile_expression_list()
             self.next("symbol", ")")
+
+            lines.append("push argument 0")  # arg 0 is "this"
+            lines.extend(expressions)
+            lines.append(f"call {func_name.content} {num_expressions+1}")
+
         else:
             # (className | varName) . subroutineName ( expressionList )
+
             assert self.peek("symbol", ".", ahead=2)
 
-            self.next("identifier")
+            obj = self.next("identifier")
+            assert isinstance(obj.content, str)
             self.next("symbol", ".")
-            self.next("identifier")
+            func_name = self.next("identifier")
+            assert isinstance(func_name.content, str)
+
             self.next("symbol", "(")
-            expressions = self.compile_expression_list()
+            expressions, num_expressions = self.compile_expression_list()
             self.next("symbol", ")")
 
+            # Is this a function or method?
+            if obj.content in self.local_symbols or obj.content in self.static_symbols:
+                # It's a method being called on a specific object.
+                # We have to push that object as the first argument.
+
+                # Example: `my_str.len()` becomes `call String.len 0`
+
+                symbol = self.get_symbol(obj.content)
+                lines.append(f"push {SEGMENT_FOR_KIND[symbol.kind]} {symbol.index}")
+                lines.extend(expressions)
+                lines.append(f"call {symbol.type}.{func_name.content} {num_expressions+1}")
+            else:
+                # It's a function; obj.content is a class name like String.
+
+                lines.extend(expressions)
+                lines.append(f"call {obj.content}.{func_name.content} {num_expressions}")
 
         return lines
 
-    def compile_expression_list(self) -> List[str]:
+    def compile_expression_list(self) -> Tuple[List[str], int]:
         """
         (expression (',' expression)* )?
+
+        Returns:
+            list of VM code lines
+            number of expressions
         """
         logging.info("expressionList")
         lines: List[str] = []
-        
+
+        num_expressions: int = 0
+
         if self.peek("symbol", ")"):
-            return []
+            return [], 0
             # return Element("expressionList", elems)
 
         lines.extend(self.compile_expression())
+        num_expressions += 1
 
         while self.peek("symbol", ","):
             self.next()
             lines.extend(self.compile_expression())
+            num_expressions += 1
 
-        return lines
+        return lines, num_expressions
 
 
 
