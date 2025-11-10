@@ -144,3 +144,32 @@ def test_expression_string():
     """).strip()
 
     assert out == expected
+
+
+def test_expression_parens():
+    """
+    Math expression using parentheses
+    """
+
+    jack = "(x+y)-(1+2)"
+
+    c = Compiler(code=jack)
+    c.local_symbols.insert("x", "local", "int")
+    c.local_symbols.insert("y", "local", "int")
+
+    out = "\n".join(c.compile_expression())
+
+    expected = dedent(f"""
+        push local 0
+        push local 1
+        add
+        push constant 1
+        push constant 2
+        add
+        sub
+    """).strip()
+
+    assert out == expected
+
+
+
