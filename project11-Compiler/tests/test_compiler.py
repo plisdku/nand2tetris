@@ -467,7 +467,7 @@ def test_compile_void_method():
 # some_string.appendChar("a")   # method on some_string
 # release()                     # method on this
 
-def test_function_call():
+def test_call_function():
     """
     """
 
@@ -491,7 +491,7 @@ def test_function_call():
     assert out == expected
 
 
-def test_method_on_object():
+def test_call_method_on_object():
     jack = dedent("""
         let x = something.release(1)
     """)
@@ -513,7 +513,7 @@ def test_method_on_object():
     print("-"*20)
     print(expected)
 
-test_method_on_object()
+test_call_method_on_object()
 
 
 
