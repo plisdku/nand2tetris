@@ -378,8 +378,31 @@ def test_while_statement():
     assert out == expected
 
 
+def test_compile_class():
+    jack = dedent("""
+        class Dinosaur {
+            field int x;
+            static char y;
 
+            constructor Dinosaur new() {
+                return this;
+            }
+        }
+    """)
 
+    c = Compiler(code=jack)
+    out = "\n".join(c.compile_class())
+
+    expected = dedent("""
+        function Dinosaur.new 0
+        push constant 1
+        call Memory.alloc 1
+        pop pointer 0
+        push pointer 0
+        return
+    """).strip()
+
+    assert out == expected
 
 
 

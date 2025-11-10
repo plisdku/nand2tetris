@@ -73,7 +73,6 @@ class SymbolTable:
             >>> table.insert("z", "field", "int")
             Symbol(name='z', kind='field', type='int', index=0)
         """
-
         if name in self.symbols:
             raise ValueError(f"A symbol named {name} is already in the table")
 

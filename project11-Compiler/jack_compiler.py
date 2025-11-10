@@ -197,7 +197,8 @@ class Compiler:
         self.next("keyword", "class")
 
         # className
-        self.next("identifier")
+        class_name = self.next("identifier")
+        assert isinstance(class_name.content, str)
 
         # '{'
         self.next("symbol", "{")
@@ -210,7 +211,7 @@ class Compiler:
             log.info(f"\t{symbol.index}: {SEGMENT_FOR_KIND[symbol.kind]} {symbol.type} {symbol.name}")
 
         while self.peek("keyword", ("constructor", "function", "method")):
-            self.compile_subroutine_dec()
+            lines.extend(self.compile_subroutine_dec(class_name.content))
 
         # '}'
         self.next("symbol", "}")
@@ -261,51 +262,96 @@ class Compiler:
         # return Element("classVarDec", elems)
         return lines
 
-    def compile_subroutine_dec(self) -> List[str]:
+    def compile_subroutine_dec(self, class_name: str) -> List[str]:
         """
         Compile a subroutineDec:
 
         ('constructor' | 'function' | 'method') ('void' | type) subroutineName
         '(' parameterList ')' subroutineBody
         """
-
-        assert False
         logging.info("subroutineDec")
 
         self.local_symbols.reset()
 
+        if self.peek("keyword", "constructor"):
+            return self.compile_constructor_dec(class_name)
+        elif self.peek("keyword", "function"):
+            return self.compile_function_dec()
+        else:
+            assert self.peek("keyword", "method")
+            return self.compile_method_dec(class_name)
+
+        # log.info("Local symbols:")
+        # for symbol in self.local_symbols:
+        #     log.info(f"\t{symbol.index}: {SEGMENT_FOR_KIND[symbol.kind]} {symbol.type} {symbol.name}")
+
+    def compile_constructor_dec(self, class_name: str) -> List[str]:
+        """
+        'constructor' type subroutineName '(' parameterList ')' subroutineBody
+        """
         lines: List[str] = []
 
-        if self.peek("keyword", "constructor"):
-            self.next()
-            self.next("identifier") # class name
-        else:
-            self.next("keyword", ("function", "method"))
-            self.next("keyword", ("void", "int", "char", "boolean"))
+        self.next("keyword", "constructor")
+        return_type = self.next("identifier")
+        assert isinstance(return_type.content, str)
+        assert return_type.content == class_name
 
-        # subroutineName
-        self.next("identifier")
+        subroutine_name = self.next("identifier")
+        assert isinstance(subroutine_name.content, str)
 
         # parameters
         self.next("symbol", "(")
-        self.compile_parameter_list()
+        parameters = self.compile_parameter_list()
+        assert parameters == [] # no code, just symbol creation
         self.next("symbol", ")")
 
-        self.compile_subroutine_body()
+        body = self.compile_subroutine_body()
 
-        log.info("Local symbols:")
-        for symbol in self.local_symbols:
-            log.info(f"\t{symbol.index}: {SEGMENT_FOR_KIND[symbol.kind]} {symbol.type} {symbol.name}")
+        # Determine how many fields to allocate
+        num_fields = self.static_symbols.count("field")
 
-        # return Element("subroutineDec", elems)
+        lines.append(f"function {class_name}.{subroutine_name.content} {len(parameters)}")
+        lines.append(f"push constant {num_fields}")
+        lines.append("call Memory.alloc 1")
+        lines.append("pop pointer 0") # set "this" to whatever came back from alloc()
+        lines.extend(body)
+
         return lines
+
+    def compile_method_dec(self, class_name: str) -> List[str]:
+        """
+        'method' ('void' | type) subroutineName '(' parameterList ')' subroutineBody
+        """
+        self.next("keyword", "method")
+        self.next("keyword", ("void", "int", "char", "boolean")) # return type
+
+        subroutine_name = self.next("identifier")
+        assert isinstance(subroutine_name.content, str)
+
+        # parameters
+        self.next("symbol", "(")
+        parameters = self.compile_parameter_list()
+        assert parameters == [] # no code, just symbol creation
+        self.next("symbol", ")")
+
+        return self.compile_subroutine_body()
+
+    def compile_function_dec(self) -> List[str]:
+        """
+        'function' ('void' | type) subroutineName '(' parameterList ')' subroutineBody
+        """
+        self.next("keyword", "function")
+        self.next("keyword", ("void", "int", "char", "boolean")) # return type
+
+        subroutine_name = self.next("identifier")
+        assert isinstance(subroutine_name.content, str)
+
+        return self.compile_subroutine_body()
 
     def compile_parameter_list(self) -> List[str]:
         """
         ( (type varName) (',' type varName)* )?
         """
-
-        assert False
         logging.info("parameterList")
         lines: List[str] = []
 
@@ -329,8 +375,7 @@ class Compiler:
                 assert isinstance(var_name.content, str)
                 self.local_symbols.insert(var_name.content, "arg", var_type.content)
 
-
-        # return Element("parameterList", elems)
+        assert lines == []
         return lines
 
     def compile_subroutine_body(self) -> List[str]:
@@ -339,7 +384,6 @@ class Compiler:
         
         Generates VM code for the body of a subroutine.
         """
-        assert False
         logging.info("subroutineBody")
         lines: List[str] = []
 
@@ -348,7 +392,7 @@ class Compiler:
         while self.peek("keyword", "var"):
             self.compile_var_dec()
 
-        self.compile_statements()
+        lines.extend(self.compile_statements())
 
         self.next("symbol", "}")
 
@@ -417,7 +461,6 @@ class Compiler:
             assert False
             return self.compile_do_statement()
         else:
-            assert False
             return self.compile_return_statement()
 
     def compile_let_statement(self) -> List[str]: # TESTED
@@ -474,7 +517,6 @@ class Compiler:
             # field, this
             # arg, argument
             lines.append(f"pop {SEGMENT_FOR_KIND[symbol.kind]} {symbol.index}")
-
 
         return lines
 
@@ -578,11 +620,12 @@ class Compiler:
             assert False
             self.next()
         else:
-            assert False
-            self.compile_expression()
+            lines.extend(self.compile_expression())
             self.next("symbol", ";")
 
-        # return Element("returnStatement", elems)
+        lines.append("return")
+
+
         return lines
 
     def compile_expression(self) -> List[str]:
