@@ -184,7 +184,7 @@ class Compiler:
         logging.info(f"{token}")
         return token
 
-    def compile_class(self) -> List[str]:
+    def compile_class(self) -> List[str]: # TESTED
         """
         Compile a class. The first token should be the 'class' keyword.
 
@@ -254,15 +254,12 @@ class Compiler:
             assert isinstance(var_name.content, str)
             self.static_symbols.insert(var_name.content, kind, var_type.content)
 
-
         # ';'
         self.next("symbol", ";")
 
-
-        # return Element("classVarDec", elems)
         return lines
 
-    def compile_subroutine_dec(self, class_name: str) -> List[str]:
+    def compile_subroutine_dec(self, class_name: str) -> List[str]: # TESTED
         """
         Compile a subroutineDec:
 
@@ -285,7 +282,7 @@ class Compiler:
         # for symbol in self.local_symbols:
         #     log.info(f"\t{symbol.index}: {SEGMENT_FOR_KIND[symbol.kind]} {symbol.type} {symbol.name}")
 
-    def compile_constructor_dec(self, class_name: str) -> List[str]:
+    def compile_constructor_dec(self, class_name: str) -> List[str]: # TESTED
         """
         'constructor' type subroutineName '(' parameterList ')' subroutineBody
 
@@ -324,7 +321,7 @@ class Compiler:
 
         return lines
 
-    def compile_method_dec(self, class_name: str) -> List[str]:
+    def compile_method_dec(self, class_name: str) -> List[str]: # TESTED
         """
         'method' ('void' | type) subroutineName '(' parameterList ')' subroutineBody
 
@@ -353,7 +350,7 @@ class Compiler:
         lines.extend(body)
         return lines
 
-    def compile_function_dec(self, class_name) -> List[str]:
+    def compile_function_dec(self, class_name) -> List[str]: # TESTED
         """
         'function' ('void' | type) subroutineName '(' parameterList ')' subroutineBody
         """
@@ -376,7 +373,7 @@ class Compiler:
         lines.extend(body)
         return lines
 
-    def compile_parameter_list(self) -> List[str]:
+    def compile_parameter_list(self) -> List[str]: # TESTED
         """
         ( (type varName) (',' type varName)* )?
         """
@@ -406,7 +403,7 @@ class Compiler:
         assert lines == []
         return lines
 
-    def compile_subroutine_body(self) -> List[str]:
+    def compile_subroutine_body(self) -> List[str]: # TESTED
         """
         '{' varDec* statements '}'
         
@@ -474,7 +471,7 @@ class Compiler:
         # return Element("statements", elems)
         return lines
 
-    def compile_statement(self) -> List[str]:
+    def compile_statement(self) -> List[str]: # TESTED
         """
         letStatement | ifStatement | whileStatement | doStatement | returnStatement
         """
@@ -617,7 +614,7 @@ class Compiler:
 
         return lines
 
-    def compile_do_statement(self) -> List[str]:
+    def compile_do_statement(self) -> List[str]: # TESTED
         """
         'do' subroutineCall ';'
         """
@@ -689,7 +686,7 @@ class Compiler:
         logging.info("term")
         lines: List[str] = []
 
-        if self.peek(("integerConstant", "stringConstant")):
+        if self.peek(("integerConstant", "stringConstant")): # TESTED
             constant = self.next()
             assert isinstance(constant.content, str)
 
@@ -727,7 +724,7 @@ class Compiler:
         elif self.peek("identifier"):
             # Could be varName, varName[expression], or subroutineCall
 
-            if self.peek("symbol", ("(", "."), ahead=2):
+            if self.peek("symbol", ("(", "."), ahead=2): # TESTED
                 # subroutineCall
 
                 subroutine_lines = self.compile_subroutine_call()
@@ -771,7 +768,7 @@ class Compiler:
 
         return lines
 
-    def compile_subroutine_call(self) -> List[str]:
+    def compile_subroutine_call(self) -> List[str]: # TESTED
         """
         subroutineName '(' expressionList ')' | (className | varName) '.' subroutineName
         '(' expressionList ')'
@@ -786,7 +783,7 @@ class Compiler:
         logging.info("subroutine")
         lines: List[str] = []
 
-        if self.peek("symbol", "(", ahead=2):
+        if self.peek("symbol", "(", ahead=2): # TESTED
             # subroutineName
 
             # This one implicitly calls this.something().
@@ -823,7 +820,7 @@ class Compiler:
             self.next("symbol", ")")
 
             # Is this a function or method?
-            if obj.content in self.local_symbols or obj.content in self.static_symbols:
+            if obj.content in self.local_symbols or obj.content in self.static_symbols: # TESTED
                 # It's a method being called on a specific object.
                 # We have to push that object as the first argument.
 
@@ -833,7 +830,7 @@ class Compiler:
                 lines.append(f"push {SEGMENT_FOR_KIND[symbol.kind]} {symbol.index}")
                 lines.extend(expressions)
                 lines.append(f"call {symbol.type}.{func_name.content} {num_expressions+1}")
-            else:
+            else: # TESTED
                 # It's a function; obj.content is a class name like String.
 
                 lines.extend(expressions)
@@ -841,7 +838,7 @@ class Compiler:
 
         return lines
 
-    def compile_expression_list(self) -> Tuple[List[str], int]:
+    def compile_expression_list(self) -> Tuple[List[str], int]: # TESTED
         """
         (expression (',' expression)* )?
 
