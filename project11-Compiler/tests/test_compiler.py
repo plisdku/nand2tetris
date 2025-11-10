@@ -454,8 +454,9 @@ def test_compile_void_method():
     c = Compiler(code=jack)
     out = "\n".join(c.compile_class())
 
+    # methods have an implicit "this" argument.
     expected = dedent("""
-        function Dinosaur.bar 1
+        function Dinosaur.bar 2
         push argument 0
         pop pointer 0
         push constant 0

@@ -347,7 +347,7 @@ class Compiler:
 
         body = self.compile_subroutine_body()
 
-        lines.append(f"function {class_name}.{subroutine_name.content} {self.local_symbols.count('arg')}")
+        lines.append(f"function {class_name}.{subroutine_name.content} {self.local_symbols.count('arg')+1}")
         lines.append("push argument 0") # get value for THIS pointer
         lines.append("pop pointer 0") # set THIS pointer
         lines.extend(body)
