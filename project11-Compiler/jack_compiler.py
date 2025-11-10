@@ -62,6 +62,14 @@ return
 """
 
 
+SEGMENT_FOR_KIND = {
+    "arg": "argument",
+    "var": "local",
+    "field": "this",
+    "static": "static"
+}
+
+
 BINARY_OPS_MAP = {
     "+": "add",
     "*": "call Math.multiply 2",
@@ -183,7 +191,7 @@ class Compiler:
 
         log.info("Static symbols:")
         for symbol in self.static_symbols:
-            log.info(f"\t{symbol.index}: {symbol.kind} {symbol.type} {symbol.name}")
+            log.info(f"\t{symbol.index}: {SEGMENT_FOR_KIND[symbol.kind]} {symbol.type} {symbol.name}")
 
         while self.peek("keyword", ("constructor", "function", "method")):
             self.compile_subroutine_dec()
@@ -269,7 +277,7 @@ class Compiler:
 
         log.info("Local symbols:")
         for symbol in self.local_symbols:
-            log.info(f"\t{symbol.index}: {symbol.kind} {symbol.type} {symbol.name}")
+            log.info(f"\t{symbol.index}: {SEGMENT_FOR_KIND[symbol.kind]} {symbol.type} {symbol.name}")
 
         # return Element("subroutineDec", elems)
         return lines
@@ -403,21 +411,53 @@ class Compiler:
 
         self.next("keyword", "let")
         var_name = self.next("identifier")
+        assert isinstance(var_name.content, str)
 
         assert isinstance(var_name.content, str)
         log.info(f"let {var_name.content}: {self.get_symbol(var_name.content)}")
 
         if self.peek("symbol", "["):
+            # set array: x[y] = z
             self.next()
-            self.compile_expression()
+            indexing_expression = self.compile_expression()
+
             self.next("symbol", "]")
+            self.next("symbol", "=")
+            value_expression = self.compile_expression()
+            self.next("symbol", ";")
 
-        self.next("symbol", "=")
+            symbol = self.get_symbol(var_name.content)
+            lines.append(f"push {SEGMENT_FOR_KIND[symbol.kind]} {symbol.index}")
+            lines.extend(indexing_expression)
+            lines.append("add")
+            # address to write to is at the top of the stack
 
-        self.compile_expression()
-        self.next("symbol", ";")
+            lines.extend(value_expression)
+            lines.append("pop temp 0")
 
-        # return Element("letStatement", elems)
+            # now the address to write to is at the top of the stack again
+            lines.append("pop pointer 1")
+            lines.append("push temp 0")
+            lines.append("pop that 0")
+        else:
+            # set scalar: x = y
+
+            self.next("symbol", "=")
+            value_expression = self.compile_expression()
+            self.next("symbol", ";")
+
+            symbol = self.get_symbol(var_name.content)
+            lines.extend(value_expression)
+
+            # kind, segment
+            #
+            # var, local
+            # static, static
+            # field, this
+            # arg, argument
+            lines.append(f"pop {SEGMENT_FOR_KIND[symbol.kind]} {symbol.index}")
+
+
         return lines
 
     def compile_if_statement(self) -> List[str]:
@@ -613,7 +653,7 @@ class Compiler:
                 symbol = self.get_symbol(var_name.content)
                 log.info(f"var [] reference: {symbol}")
 
-                lines.append(f"push {symbol.kind} {symbol.index}")
+                lines.append(f"push {SEGMENT_FOR_KIND[symbol.kind]} {symbol.index}")
 
                 self.next("symbol", "[")
                 lines.extend(self.compile_expression())
@@ -629,7 +669,7 @@ class Compiler:
                 symbol = self.get_symbol(var_name.content)
                 log.info(f"var reference: {symbol}")
 
-                lines.append(f"push {symbol.kind} {symbol.index}")
+                lines.append(f"push {SEGMENT_FOR_KIND[symbol.kind]} {symbol.index}")
 
         elif self.peek("symbol", "("):
             self.next()

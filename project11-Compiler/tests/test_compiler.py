@@ -155,8 +155,8 @@ def test_expression_parens():
     jack = "(x+y)-(1+2)"
 
     c = Compiler(code=jack)
-    c.local_symbols.insert("x", "local", "int")
-    c.local_symbols.insert("y", "local", "int")
+    c.local_symbols.insert("x", "var", "int")
+    c.local_symbols.insert("y", "var", "int")
 
     out = "\n".join(c.compile_expression())
 
@@ -231,10 +231,34 @@ def test_array_expression():
 
     assert out == expected
 
+def test_set_array_value():
+    """
+    Test set value to array, x[10] = 1
+    """
 
+    c = Compiler(code="let x[10] = 1;")
+    c.local_symbols.insert("x", "var", "int")
+    out = "\n".join(c.compile_statement())
 
+    expected = dedent("""
+        push local 0
+        push constant 10
+        add
+        push constant 1
+        pop temp 0
+        pop pointer 1
+        push temp 0
+        pop that 0
 
+    """).strip()
 
+    # print(out)
+    # print("-"*20)
+    # print(expected)
+
+    assert out == expected
+
+# test_set_array_value()
 
 
 
