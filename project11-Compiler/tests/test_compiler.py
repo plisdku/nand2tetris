@@ -455,6 +455,8 @@ def test_compile_void_method():
 
     expected = dedent("""
         function Dinosaur.bar 1
+        push argument 0
+        pop pointer 0
         push constant 0
         return
     """).strip()

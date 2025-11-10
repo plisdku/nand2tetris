@@ -7,7 +7,7 @@ from jack_tokenizer import escape_token, tokenize
 from symbol_table import SymbolTable, KIND, Symbol
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,
     format="%(levelname)s:%(funcName)s: %(message)s"
 )
 log = logging.getLogger(__name__)
@@ -291,6 +291,9 @@ class Compiler:
         """
         lines: List[str] = []
 
+        # Add "this" to symbol table
+        self.local_symbols.insert("this", "var", class_name)
+
         self.next("keyword", "constructor")
         return_type = self.next("identifier")
         assert isinstance(return_type.content, str)
@@ -306,9 +309,6 @@ class Compiler:
         self.next("symbol", ")")
 
         body = self.compile_subroutine_body()
-
-        # Add "this" to symbol table
-        self.local_symbols.insert("this", "var", class_name)
 
         # Determine how many fields to allocate
         num_fields = self.static_symbols.count("field")
@@ -329,6 +329,10 @@ class Compiler:
         of implicit method calls.
         """
         lines: List[str] = []
+
+        # Add "this" to symbol table
+        self.local_symbols.insert("this", "var", class_name)
+
         self.next("keyword", "method")
         self.next("keyword", ("void", "int", "char", "boolean")) # return type
 
@@ -343,10 +347,9 @@ class Compiler:
 
         body = self.compile_subroutine_body()
 
-        # Add "this" to symbol table
-        self.local_symbols.insert("this", "var", class_name)
-
         lines.append(f"function {class_name}.{subroutine_name.content} {self.local_symbols.count('arg')}")
+        lines.append("push argument 0") # get value for THIS pointer
+        lines.append("pop pointer 0") # set THIS pointer
         lines.extend(body)
         return lines
 
