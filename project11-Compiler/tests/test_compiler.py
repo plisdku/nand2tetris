@@ -171,5 +171,41 @@ def test_expression_parens():
 
     assert out == expected
 
+def test_expression_multiply_divide():
+    """
+    Math expression with * and /, which are OS functions.
+    """
+
+    jack = "3 * 2 / 4"
+
+    c = Compiler(code=jack)
+
+    out = "\n".join(c.compile_expression())
+
+    expected = dedent(f"""
+        push constant 3
+        push constant 2
+        call Math.multiply 2
+        push constant 4
+        call Math.divide 2
+    """).strip()
+
+    assert out == expected
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
