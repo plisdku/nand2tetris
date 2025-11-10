@@ -39,14 +39,10 @@ def main():
 
         if _in.suffix == ".jack":
             vm_code = compile_jack(_in.read_text())
-            print(vm_code)
+            _out.write_text(vm_code)
         else:
             tokens = None
             print("Unimplemented weirdness")
-
-
-            # 
-            # _out.write_text("\n".join(xml_lines))
 
 
 if __name__ == '__main__':
