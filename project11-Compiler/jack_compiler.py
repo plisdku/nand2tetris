@@ -12,15 +12,30 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
+
+def remove_whitespace(program: str) -> str:
+    """
+    Remove leading and trailing whitespace from each line, and remove empty lines.
+    """
+
+    out_lines = []
+
+    for line in program.splitlines():
+        stript = line.strip()
+        if stript:
+            out_lines.append(stript)
+    return "\n".join(out_lines)
+
+
 class CompilerError(Exception):
     pass
 
 
-def compile_jack(code: str):
+def compile_jack(code: str) -> List[str]:
     tokens = tokenize(code)
     return compile_elements(tokens)
 
-def compile_elements(tokens: List[Element]) -> Element:
+def compile_elements(tokens: List[Element]) -> List[str]:
     compiler = Compiler(tokens)
     return compiler.compile_elements()
 
@@ -58,7 +73,7 @@ class Compiler:
             tokens = tokenize(code)
         else:
             assert code is None
-        
+
         self.tokens: List[Element] = tokens
         self.static_symbols: SymbolTable = SymbolTable()
         self.local_symbols: SymbolTable = SymbolTable()
@@ -125,63 +140,60 @@ class Compiler:
         logging.info(f"{token}")
         return token
 
-    def compile_class(self) -> Element:
+    def compile_class(self) -> List[str]:
         """
         Compile a class. The first token should be the 'class' keyword.
 
         'class' className '{' classVarDec* subroutineDec* '}'
         """
         logging.info("class")
-        elems: List[Element] = []
+        lines: List[str] = []
 
         # 'class'
-        elems.append(self.next("keyword", "class"))
+        self.next("keyword", "class")
 
         # className
-        elems.append(self.next("identifier"))
+        self.next("identifier")
 
         # '{'
-        elems.append(self.next("symbol", "{"))
+        self.next("symbol", "{")
 
         while self.peek("keyword", ("static", "field")):
-            elems.append(self.compile_class_var_dec())
+            self.compile_class_var_dec()
 
         log.info("Static symbols:")
         for symbol in self.static_symbols:
             log.info(f"\t{symbol.index}: {symbol.kind} {symbol.type} {symbol.name}")
 
         while self.peek("keyword", ("constructor", "function", "method")):
-            elems.append(self.compile_subroutine_dec())
+            self.compile_subroutine_dec()
 
         # '}'
-        elems.append(self.next("symbol", "}"))
+        self.next("symbol", "}")
 
-        return Element("class", elems)
+        # return Element("class", elems)
+        return lines
 
 
-    def compile_class_var_dec(self) -> Element:
+    def compile_class_var_dec(self) -> List[str]:  # TESTED
         """
         Compile a classVarDec:
 
         ('static' | 'field') type varName (',', varName)* ';'
         """
         logging.info("classVarDec")
-        elems: List[Element] = []
+        lines: List[str] = []
 
         # 'static' | 'field'
         var_kind = self.next("keyword", ("static", "field"))
-        elems.append(var_kind)
 
         # type
         if self.peek("keyword", ("int", "char", "boolean")):
             var_type = self.next()
         else:
             var_type = self.next("identifier") # custom type 
-        elems.append(var_type)
 
-        # varName
         var_name = self.next("identifier")
-        elems.append(var_name)
 
         assert isinstance(var_name.content, str)
         assert isinstance(var_kind.content, str)
@@ -191,21 +203,21 @@ class Compiler:
 
         # (',', varName)* ';'
         while self.peek("symbol", ","):
-            elems.append(self.next("symbol", ","))
+            self.next("symbol", ",")
             var_name = self.next("identifier")
-            elems.append(var_name)
 
             assert isinstance(var_name.content, str)
             self.static_symbols.insert(var_name.content, kind, var_type.content)
 
 
         # ';'
-        elems.append(self.next("symbol", ";"))
+        self.next("symbol", ";")
 
 
-        return Element("classVarDec", elems)
+        # return Element("classVarDec", elems)
+        return lines
 
-    def compile_subroutine_dec(self) -> Element:
+    def compile_subroutine_dec(self) -> List[str]:
         """
         Compile a subroutineDec:
 
@@ -216,45 +228,44 @@ class Compiler:
 
         self.local_symbols.reset()
 
-        elems: List[Element] = []
+        lines: List[str] = []
 
         if self.peek("keyword", "constructor"):
-            elems.append(self.next())
-            elems.append(self.next("identifier")) # class name
+            self.next()
+            self.next("identifier") # class name
         else:
-            elems.append(self.next("keyword", ("function", "method")))
-            elems.append(self.next("keyword", ("void", "int", "char", "boolean")))
+            self.next("keyword", ("function", "method"))
+            self.next("keyword", ("void", "int", "char", "boolean"))
 
         # subroutineName
-        elems.append(self.next("identifier"))
+        self.next("identifier")
 
         # parameters
-        elems.append(self.next("symbol", "("))
-        elems.append(self.compile_parameter_list())
-        elems.append(self.next("symbol", ")"))
+        self.next("symbol", "(")
+        self.compile_parameter_list()
+        self.next("symbol", ")")
 
-        elems.append(self.compile_subroutine_body())
+        self.compile_subroutine_body()
 
         log.info("Local symbols:")
         for symbol in self.local_symbols:
             log.info(f"\t{symbol.index}: {symbol.kind} {symbol.type} {symbol.name}")
 
-        return Element("subroutineDec", elems)
+        # return Element("subroutineDec", elems)
+        return lines
 
-    def compile_parameter_list(self) -> Element:
+    def compile_parameter_list(self) -> List[str]:
         """
         ( (type varName) (',' type varName)* )?
         """
         logging.info("parameterList")
-        elems: List[Element] = []
+        lines: List[str] = []
 
         # Zero or one
 
         if self.peek("keyword", ("int", "char", "boolean")):
             var_type = self.next()
-            elems.append(var_type)
             var_name = self.next("identifier")
-            elems.append(var_name)
 
             assert isinstance(var_type.content, str)
             assert isinstance(var_name.content, str)
@@ -262,20 +273,19 @@ class Compiler:
 
             # (',' type varName)*
             while self.peek("symbol", ","):
-                elems.append(self.next())
+                self.next()
                 var_type = self.next("keyword", ("int", "char", "boolean"))
-                elems.append(var_type)
                 var_name = self.next("identifier")
-                elems.append(var_name)
 
                 assert isinstance(var_type.content, str)
                 assert isinstance(var_name.content, str)
                 self.local_symbols.insert(var_name.content, "arg", var_type.content)
 
 
-        return Element("parameterList", elems)
+        # return Element("parameterList", elems)
+        return lines
 
-    def compile_subroutine_body(self) -> Element:
+    def compile_subroutine_body(self) -> List[str]:
         """
         '{' varDec* statements '}'
         
@@ -287,21 +297,22 @@ class Compiler:
         }
         """
         logging.info("subroutineBody")
-        elems: List[Element] = []
+        lines: List[str] = []
 
-        elems.append(self.next("symbol", "{"))
+        self.next("symbol", "{")
 
         while self.peek("keyword", "var"):
-            elems.append(self.compile_var_dec())
+            self.compile_var_dec()
 
-        elems.append(self.compile_statements())
+        self.compile_statements()
 
-        elems.append(self.next("symbol", "}"))
+        self.next("symbol", "}")
 
-        return Element("subroutineBody", elems)
+        # return Element("subroutineBody", elems)
+        return lines
 
 
-    def compile_var_dec(self) -> Element:
+    def compile_var_dec(self) -> List[str]:  # TESTED
         """
         'var' type varName (',' varName)* ';'
         
@@ -311,43 +322,43 @@ class Compiler:
             None
         """
         logging.info("varDec")
-        elems: List[Element] = []
+        lines: List[str] = []
 
-        elems.append(self.next("keyword", "var"))
+        self.next("keyword", "var")
         var_type = self.next(("keyword", "identifier")) # type
-        elems.append(var_type)
 
         var_name = self.next("identifier") # var name
-        elems.append(var_name)
 
         assert isinstance(var_type.content, str)
         assert isinstance(var_name.content, str)
         self.local_symbols.insert(var_name.content, "var", var_type.content)
 
         while self.peek("symbol", ","):
-            elems.append(self.next()) # ","
+            self.next() # ",
             var_name = self.next("identifier")
-            elems.append(var_name)
+
             assert isinstance(var_name.content, str)
             self.local_symbols.insert(var_name.content, "var", var_type.content)
 
-        elems.append(self.next("symbol", ";"))
+        self.next("symbol", ";")
 
-        return Element("varDec", elems)
+        # return Element("varDec", elems)
+        return lines
 
-    def compile_statements(self) -> Element:
+    def compile_statements(self) -> List[str]:
         """
         statement*
         """
         logging.info("statements")
-        elems: List[Element] = []
+        lines: List[str] = []
 
         while self.peek("keyword", ("let", "if", "while", "do", "return")):
-            elems.append(self.compile_statement())
+            self.compile_statement()
 
-        return Element("statements", elems)
+        # return Element("statements", elems)
+        return lines
 
-    def compile_statement(self) -> Element:
+    def compile_statement(self) -> List[str]:
         """
         letStatement | ifStatement | whileStatement | doStatement | returnStatement
         """
@@ -363,126 +374,132 @@ class Compiler:
         else:
             return self.compile_return_statement()
 
-    def compile_let_statement(self) -> Element:
+    def compile_let_statement(self) -> List[str]:
         """
         'let' varName ('[' expression ']')? '=' expression ';'
         """
         logging.info("let")
-        elems: List[Element] = []
+        lines: List[str] = []
 
-        elems.append(self.next("keyword", "let"))
+        self.next("keyword", "let")
         var_name = self.next("identifier")
-        elems.append(var_name)
+
         assert isinstance(var_name.content, str)
         log.info(f"let {var_name.content}: {self.get_symbol(var_name.content)}")
 
         if self.peek("symbol", "["):
-            elems.append(self.next())
-            elems.append(self.compile_expression())
-            elems.append(self.next("symbol", "]"))
+            self.next()
+            self.compile_expression()
+            self.next("symbol", "]")
 
-        elems.append(self.next("symbol", "="))
+        self.next("symbol", "=")
 
-        elems.append(self.compile_expression())
-        elems.append(self.next("symbol", ";"))
+        self.compile_expression()
+        self.next("symbol", ";")
 
-        return Element("letStatement", elems)
+        # return Element("letStatement", elems)
+        return lines
 
-    def compile_if_statement(self) -> Element:
+    def compile_if_statement(self) -> List[str]:
         """
         'if' '(' expression ')' '{' statements '}' ('else' '{' statements '}')?
         """
         logging.info("if")
-        elems: List[Element] = []
+        lines: List[str] = []
 
-        elems.append(self.next("keyword", "if"))
-        elems.append(self.next("symbol", "("))
-        elems.append(self.compile_expression())
-        elems.append(self.next("symbol", ")"))
+        self.next("keyword", "if")
+        self.next("symbol", "(")
+        self.compile_expression()
+        self.next("symbol", ")")
 
-        elems.append(self.next("symbol", "{"))
-        elems.append(self.compile_statements())
-        elems.append(self.next("symbol", "}"))
+        self.next("symbol", "{")
+        self.compile_statements()
+        self.next("symbol", "}")
 
         if self.peek("keyword", "else"):
-            elems.append(self.next())
-            elems.append(self.next("symbol", "{"))
-            elems.append(self.compile_statements())
-            elems.append(self.next("symbol", "}"))
+            self.next()
+            self.next("symbol", "{")
+            self.compile_statements()
+            self.next("symbol", "}")
 
-        return Element("ifStatement", elems)
+        # return Element("ifStatement", elems)
+        return lines
 
-    def compile_while_statement(self) -> Element:
+    def compile_while_statement(self) -> List[str]:
         """
         'while' '(' expression ')' '{' statements '}'
         """
         logging.info("while")
-        elems: List[Element] = []
+        lines: List[str] = []
 
-        elems.append(self.next("keyword", "while"))
-        elems.append(self.next("symbol", "("))
-        elems.append(self.compile_expression())
-        elems.append(self.next("symbol", ")"))
-        elems.append(self.next("symbol", "{"))
-        elems.append(self.compile_statements())
-        elems.append(self.next("symbol", "}"))
+        self.next("keyword", "while")
+        self.next("symbol", "(")
+        self.compile_expression()
+        self.next("symbol", ")")
+        self.next("symbol", "{")
+        self.compile_statements()
+        self.next("symbol", "}")
 
-        return Element("whileStatement", elems)
+        # return Element("whileStatement", elems)
+        return lines
 
-    def compile_do_statement(self) -> Element:
+    def compile_do_statement(self) -> List[str]:
         """
         'do' subroutineCall ';'
         """
         logging.info("do")
-        elems: List[Element] = []
+        lines: List[str] = []
 
-        elems.append(self.next("keyword", "do"))
+        self.next("keyword", "do")
 
         subroutine_result = self.compile_subroutine_call()
-        assert isinstance(subroutine_result.content, List)
-        elems.extend(subroutine_result.content)
-        elems.append(self.next("symbol", ";"))
+        # assert isinstance(subroutine_result.content, List)
+        # subroutine_result.content
+        self.next("symbol", ";")
 
-        return Element("doStatement", elems)
+        # return Element("doStatement", elems)
+        return lines
 
-    def compile_return_statement(self) -> Element:
+    def compile_return_statement(self) -> List[str]:
         """
         'return' expression? ';'
         """
         logging.info("return")
-        elems: List[Element] = []
+        lines: List[str] = []
 
-        elems.append(self.next("keyword", "return"))
+        self.next("keyword", "return")
 
         if self.peek("symbol", ";"):
-            elems.append(self.next())
+            self.next()
         else:
-            elems.append(self.compile_expression())
-            elems.append(self.next("symbol", ";"))
+            self.compile_expression()
+            self.next("symbol", ";")
 
-        return Element("returnStatement", elems)
+        # return Element("returnStatement", elems)
+        return lines
 
-    def compile_expression(self) -> Element:
+    def compile_expression(self) -> List[str]:
         """
         term (op term)*
         """
         logging.info("expression")
-        elems: List[Element] = []
+        lines: List[str] = []
 
-        elems.append(self.compile_term())
+        self.compile_term()
 
         # something should be on the stack
 
         while self.peek("symbol", ("+", "-", "*", "/", "&", "|", "<", ">", "=")):
-            elems.append(self.next())
-            elems.append(self.compile_term())
+            self.next()
+            self.compile_term()
 
             # put the term's value on the stack
             # do the correct operation
 
-        return Element("expression", elems)
+        # return Element("expression", elems)
+        return lines
 
-    def compile_term(self) -> Element:
+    def compile_term(self) -> List[str]:
         """
         integerConstant | stringConstant | keywordConstant | varName |
         varName '[' expression ']' | '(' expression ')' | (unaryOp term) | subroutineCall
@@ -520,50 +537,59 @@ class Compiler:
 
 
         logging.info("term")
-        elems: List[Element] = []
+        lines: List[str] = []
 
         if self.peek(("integerConstant", "stringConstant")):
-            elems.append(self.next())
+            constant = self.next()
+
+            if constant.category == "integerConstant":
+                lines.append(f"push constant {constant}")
+            else:
+                assert isinstance(constant.content, str)
+                # the constructor pushes the address of the allocated
+                # memory block.
+                code = f"""
+                    call String.new({len(constant.content)})
+                """
+
         elif self.peek("keyword", ("true", "false", "null", "this")):
-            elems.append(self.next())
+            self.next()
         elif self.peek("identifier"):
             # Could be varName, varName[expression], or subroutineCall
 
             if self.peek("symbol", ("(", "."), ahead=2):
                 # subroutineCall
-                # elems.append(self.compile_subroutine_call())
+                # self.compile_subroutine_call()
                 subroutine_elem = self.compile_subroutine_call()
-                assert isinstance(subroutine_elem.content, List)
-                elems.extend(subroutine_elem.content)
+                # assert isinstance(subroutine_elem.content, List)
             elif self.peek("symbol", "[", ahead=2):
                 # varName[expression]
                 var_name = self.next("identifier")
-                elems.append(var_name)
 
                 assert isinstance(var_name.content, str)
                 log.info(f"var [] reference: {self.get_symbol(var_name.content)}")
 
-                elems.append(self.next("symbol", "["))
-                elems.append(self.compile_expression())
-                elems.append(self.next("symbol", "]"))
+                self.next("symbol", "[")
+                self.compile_expression()
+                self.next("symbol", "]")
             else:
                 # varName
                 var_name = self.next("identifier")
-                elems.append(var_name)
 
                 assert isinstance(var_name.content, str)
                 log.info(f"var reference: {self.get_symbol(var_name.content)}")
         elif self.peek("symbol", "("):
-            elems.append(self.next())
-            elems.append(self.compile_expression())
-            elems.append(self.next("symbol", ")"))
+            self.next()
+            self.compile_expression()
+            self.next("symbol", ")")
         else:
-            elems.append(self.next("symbol", ("-", "~")))
-            elems.append(self.compile_term())
+            self.next("symbol", ("-", "~"))
+            self.compile_term()
 
-        return Element("term", elems)
+        # return Element("term", elems)
+        return lines
 
-    def compile_subroutine_call(self) -> Element:
+    def compile_subroutine_call(self) -> List[str]:
         """
         subroutineName '(' expressionList ')' | (className | varName) '.' subroutineName
         '(' expressionList ')'
@@ -571,44 +597,47 @@ class Compiler:
         Leave the result on the stack
         """
         logging.info("subroutine")
-        elems: List[Element] = []
+        lines: List[str] = []
 
         if self.peek("symbol", "(", ahead=2):
             # subroutineName
-            elems.append(self.next("identifier"))
-            elems.append(self.next("symbol", "("))
-            elems.append(self.compile_expression_list())
-            elems.append(self.next("symbol", ")"))
+            self.next("identifier")
+            self.next("symbol", "(")
+            self.compile_expression_list()
+            self.next("symbol", ")")
         else:
             # (className | varName) . subroutineName ( expressionList )
             assert self.peek("symbol", ".", ahead=2)
 
-            elems.append(self.next("identifier"))
-            elems.append(self.next("symbol", "."))
-            elems.append(self.next("identifier"))
-            elems.append(self.next("symbol", "("))
-            elems.append(self.compile_expression_list())
-            elems.append(self.next("symbol", ")"))
+            self.next("identifier")
+            self.next("symbol", ".")
+            self.next("identifier")
+            self.next("symbol", "(")
+            self.compile_expression_list()
+            self.next("symbol", ")")
 
-        return Element("subroutineCall", elems)
+        # return Element("subroutineCall", elems)
+        return lines
 
-    def compile_expression_list(self) -> Element:
+    def compile_expression_list(self) -> List[str]:
         """
         (expression (',' expression)* )?
         """
         logging.info("expressionList")
-        elems: List[Element] = []
+        lines: List[str] = []
         
         if self.peek("symbol", ")"):
-            return Element("expressionList", elems)
+            return []
+            # return Element("expressionList", elems)
 
-        elems.append(self.compile_expression())
+        self.compile_expression()
 
         while self.peek("symbol", ","):
-            elems.append(self.next())
-            elems.append(self.compile_expression())
+            self.next()
+            self.compile_expression()
 
-        return Element("expressionList", elems)
+        # return Element("expressionList", elems)
+        return lines
 
 
 

@@ -35,7 +35,7 @@ def test_var_dec_char():
     c = Compiler(code=jack)
     out = c.compile_var_dec()
 
-    # assert out is None
+    assert out == []
 
     assert len(c.local_symbols) == 1
     assert len(c.static_symbols) == 0
@@ -51,7 +51,7 @@ def test_var_dec_class():
     c = Compiler(code=jack)
     out = c.compile_var_dec()
 
-    # assert out is None
+    assert out == []
 
     assert len(c.local_symbols) == 1
     assert len(c.static_symbols) == 0
@@ -67,7 +67,7 @@ def test_class_var_dec_two_fields():
     c = Compiler(code=jack)
     out = c.compile_class_var_dec()
 
-    # assert out is None
+    assert out == []
 
     assert len(c.local_symbols) == 0
     assert len(c.static_symbols) == 2
@@ -84,9 +84,11 @@ def test_class_var_dec_static():
     c = Compiler(code=jack)
     out = c.compile_class_var_dec()
 
-    # assert out is None
+    assert out == []
 
     assert len(c.local_symbols) == 0
     assert len(c.static_symbols) == 1
 
     assert c.static_symbols["round_guy"] == Symbol("round_guy", "static", "Orb", 0)
+
+
