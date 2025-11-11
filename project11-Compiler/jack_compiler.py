@@ -604,10 +604,6 @@ class Compiler:
         self.next("symbol", ")")
         self.next("symbol", "{")
         while_statements = self.compile_statements()
-        import rich
-        print("==== Inner")
-        rich.print(while_statements)
-        print("====")
         self.next("symbol", "}")
 
         while_start = self.while_start.new()
@@ -620,11 +616,6 @@ class Compiler:
         lines.extend(while_statements)
         lines.append(f"goto {while_start}")
         lines.append(f"label {while_end}")
-
-        import rich
-        print("==== Outer")
-        rich.print(lines)
-        print("====")
 
         return lines
 

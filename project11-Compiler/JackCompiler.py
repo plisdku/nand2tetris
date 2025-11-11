@@ -26,7 +26,7 @@ def main():
         "output",
         type=pathlib.Path,
         nargs="?",
-        default="out"
+        # default="out"
     )
 
     args = parser.parse_args()
