@@ -133,15 +133,15 @@ def test_expression_string():
         push constant {len('hello')}
         call String.new 1
         push constant 104
-        call String.appendChar 1
+        call String.appendChar 2
         push constant 101
-        call String.appendChar 1
+        call String.appendChar 2
         push constant 108
-        call String.appendChar 1
+        call String.appendChar 2
         push constant 108
-        call String.appendChar 1
+        call String.appendChar 2
         push constant 111
-        call String.appendChar 1
+        call String.appendChar 2
     """).strip()
 
     assert out == expected
@@ -395,7 +395,7 @@ def test_compile_class():
     out = "\n".join(c.compile_class())
 
     expected = dedent("""
-        function Dinosaur.new 1
+        function Dinosaur.new 0
         push constant 1
         call Memory.alloc 1
         pop pointer 0
@@ -426,7 +426,7 @@ def test_compile_function():
     out = "\n".join(c.compile_class())
 
     expected = dedent("""
-        function Dinosaur.foo 1
+        function Dinosaur.foo 0
         push constant 0
         return
     """).strip()
@@ -456,7 +456,7 @@ def test_compile_void_method():
 
     # methods have an implicit "this" argument.
     expected = dedent("""
-        function Dinosaur.bar 2
+        function Dinosaur.bar 0
         push argument 0
         pop pointer 0
         push constant 0
