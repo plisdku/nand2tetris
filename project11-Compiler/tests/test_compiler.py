@@ -533,22 +533,21 @@ def test_call_method_on_implicit_this():
     """)
 
     c = Compiler(code=jack)
-    c.local_symbols.insert("this", "var", "Human") # this is a precondition for implicit this
+    c.class_name = "Human"
     c.local_symbols.insert("x", "var", "char")
 
     out = "\n".join(c.compile_statement())
 
     # We will push argument 0 (i.e. push "this") as the implicit first argument.
     expected = dedent("""
-        push argument 0
+        push pointer 0
         push constant 99
         push constant 100
         call Human.brush_teeth 3
-        pop local 1
+        pop local 0
     """).strip()
 
     assert out == expected
-
 
 def test_do_statement():
 
