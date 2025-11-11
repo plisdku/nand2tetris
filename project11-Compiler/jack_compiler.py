@@ -109,6 +109,7 @@ class Compiler:
         else:
             assert code is None
 
+        self.class_name: Optional[str] = None
         self.tokens: List[Element] = tokens
         self.static_symbols: SymbolTable = SymbolTable()
         self.local_symbols: SymbolTable = SymbolTable()
@@ -199,6 +200,7 @@ class Compiler:
         # className
         class_name = self.next("identifier")
         assert isinstance(class_name.content, str)
+        self.class_name = class_name.content
 
         # '{'
         self.next("symbol", "{")
@@ -285,14 +287,8 @@ class Compiler:
     def compile_constructor_dec(self, class_name: str) -> List[str]: # TESTED
         """
         'constructor' type subroutineName '(' parameterList ')' subroutineBody
-
-        We need to add "this" to the symbol table, so we can get its type later in case
-        of implicit method calls.
         """
         lines: List[str] = []
-
-        # Add "this" to symbol table
-        self.local_symbols.insert("this", "arg", class_name)
 
         self.next("keyword", "constructor")
         return_type = self.next("identifier")
@@ -327,6 +323,12 @@ class Compiler:
 
         We need to add "this" to the symbol table, so we can get its type later in case
         of implicit method calls.
+
+        Therefore,
+          - in method_dec, insert "this" as an "arg", receiving index 0
+          - the parameter list will start at index 1
+
+        Relatedly, when calling a method, `call f nArgs+1` where the +1 is for THIS.
         """
         lines: List[str] = []
 
@@ -809,12 +811,10 @@ class Compiler:
             expressions, num_expressions = self.compile_expression_list()
             self.next("symbol", ")")
 
-            # We retrieve the "this" symbol simply to get its TYPE.
-            this_symbol = self.get_symbol("this")
-
-            lines.append("push argument 0")  # arg 0 is "this"
+            # push the current object reference stored in pointer 0
+            lines.append("push pointer 0")
             lines.extend(expressions)
-            lines.append(f"call {this_symbol.type}.{func_name.content} {num_expressions+1}")
+            lines.append(f"call {self.class_name}.{func_name.content} {num_expressions+1}")
 
         else:
             # (className | varName) . subroutineName ( expressionList )
