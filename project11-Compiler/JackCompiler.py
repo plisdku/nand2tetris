@@ -4,7 +4,6 @@ import logging
 
 from jack_paths import handle_jack_vm_paths
 from jack_tokenizer import tokenize, read_xml
-from jack_analyzer import write_element_xml_lines, analyze
 from jack_compiler import compile_elements, compile_jack
 
 # logging.basicConfig(
@@ -14,7 +13,6 @@ from jack_compiler import compile_elements, compile_jack
 # log = logging.getLogger(__name__)
 
 logging.getLogger("jack_compiler_orig").setLevel(logging.INFO)
-logging.getLogger("jack_analyzer").setLevel(logging.ERROR)
 
 def main():
     parser = argparse.ArgumentParser("JackCompiler")
