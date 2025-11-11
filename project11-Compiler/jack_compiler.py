@@ -388,7 +388,7 @@ class Compiler:
 
         # Zero or one
 
-        if self.peek("keyword", ("int", "char", "boolean")):
+        if self.peek("keyword", ("int", "char", "boolean")) or self.peek("identifier"):
             var_type = self.next()
             var_name = self.next("identifier")
 
