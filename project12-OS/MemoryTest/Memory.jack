@@ -1,0 +1,167 @@
+class Memory {
+    
+    static Array ram;
+    static int free_list;
+    static int free_list_size;
+    static int free_list_next;
+
+    static int heap_base;
+    static int heap_size;
+
+    function void init() {
+        let ram = 0;
+
+        // freeList = heapBase;
+        // freeList.size = heapSize;
+        // freeList.next = 0;
+
+        let heap_base = 2048;
+        let heap_size = 16384 - heap_base;
+
+        do Memory.reset();
+
+        // Each segment begins with two fields:
+        // length of segment and next pointer.
+        // the available memory in the segment is (length-2) words.
+    }
+
+    function void reset() {
+        // Put a dummy node of zero length at the start of the free list
+
+        let free_list = heap_base;
+
+        // dummy node length = -1
+        let ram[free_list] = -1;
+
+        // dummy_node.next = first real node
+        let ram[free_list+1] = free_list+2;
+
+        // first real node length = heap size - 2,
+        // and has no next node.
+        let ram[free_list+2] = heap_size - 2;
+        let ram[free_list+3] = null;
+
+        return;
+    }
+
+    function void peek(int address) {
+        return ram[address];
+    }
+
+    function void poke(int address, int value) {
+        ram[address] = value;
+        return;
+    }
+
+    function int segment_length(int node) {
+        return ram[node];
+    }
+
+    function int next_segment(int node) {
+        return ram[node+1];
+    }
+
+
+    // free_list points to the first block.
+    // if we give away the first block, then free_list points to the next one.
+    // if we dealloc a block that's before free_list, then free_list points to that.
+    // this could be done by having a dummy first node of length zero or something,
+    // so it never gets allocated.
+
+    function int find_segment(cur_node, size) {
+
+        var int next_node, next_next_node;
+
+        // First available segment heuristic.
+        // Return the segment BEFORE the available segment, or null if no segment
+        // is found.
+
+        let next_node = Memory.next_segment(cur_node);
+
+        while (Memory.segment_length(next_node) < size) {
+            let next_next_node = Memory.next_segment(next_node);
+
+            if (next_next_node = null) {
+                return null;
+            }
+
+            let cur_node = next_node;
+            let next_node = next_next_node;
+        }
+
+        return cur_node;
+    }
+
+
+    function void insert_segment(int before_new, int new, int length) {
+
+        // new.next = prev.next
+        let ram[new+1] = ram[before_new+1];
+
+        // new.length = length
+        let ram[new] = length;
+
+        // prev.next = new
+        let ram[before_new+1] = new;
+    }
+
+
+    function void remove_segment(int before_remove_me, int remove_me) {
+
+        // prev.next = remove_me.next
+        let ram[before_remove_me+1] = ram[remove_me+1];
+    }
+
+    function Array alloc(int size) {
+
+        var int before_found, found, new;
+
+        let before_found = Memory.find_segment(free_list, size);
+        let found = Memory.next_segment(before_found);
+
+        if (before_found = null) {
+            do Sys.error(1234);
+        }
+
+        if (Memory.segment_length(found) > size + 4) {
+
+            // length > 2 + size + 2, so we can fit another segment in the end of this
+            // block by dividing it.
+
+            let new = found + size + 2;
+            do Memory.insert_segment(before_found, new, Memory.segment_length(found) - (size+2));
+
+            // truncate found segment length to size + 2
+            let ram[found] = size + 2;
+
+            return found+2;
+        }
+        else
+        {
+            // There is not enough room in the found segment for the
+            // alloc size and another node, so just return the whole thing.
+
+            do Memory.remove_segment(before_found, found);
+            return found+2;
+        }
+    }
+
+    function void deAlloc(int base) {
+        // deallocate the block of memory starting at base.
+        // ram[base-2] is its segment length, and ram[base-1] will be
+        // its next pointer.
+            
+        var int returned_segment, returned_segment_length, dummy_segment;
+
+        // Return the segment to the free list.
+        // Simplest way is to insert it after the dummy node, really.
+        // I DGAF about fragmentation, I just want to escape.
+
+        let returned_segment = base-2;
+        let returned_segment_length = Memory.segment_length(returned_segment);
+
+        let dummy_segment = free_list;
+
+        do Memory.insert_segment(dummy_segment, returned_segment, returned_segment_length);
+    }
+}
