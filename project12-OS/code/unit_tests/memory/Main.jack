@@ -4,24 +4,26 @@ class Main {
     function void main() {
         // do Output.printString("Hello, world");
         // do Output.println();
-        do Main.testAllocWhole();      // expected: OK
-        //do Main.testAllocTooBig();     // expected: OK (error)
-        //do Main.testAllocMaxSegments();
-        //do Main.testDumpSegments();
+        // do Main.testAllocWhole();      // expected: OK
+        // do Main.testAllocTooBig();     // expected: OK (error)
+        // do Main.testAllocMaxSegments();
+        do Main.testDumpSegments();
         //do Main.testDealloc();
         return;
     }
 
     function void testAllocWhole() {
         var int p;
-        // do Memory.init();
-        // let p = Memory.alloc(14330); // attempt to allocate nearly whole heap
-        do Output.printString("testAllocWhole: ");
+        do Memory.init();
+        let p = Memory.alloc(14330); // attempt to allocate nearly whole heap
+        // Deallocate before printing: Output may need heap space
         if (p = -1) {
-            do Output.printString("FAIL");
+            do Output.printString("testAllocWhole: FAIL");
+            do Output.println();
         } else {
-            do Output.printString("OK");
             do Memory.deAlloc(p);
+            do Output.printString("testAllocWhole: OK");
+            do Output.println();
         }
         do Output.println();
         return;
@@ -52,6 +54,8 @@ class Main {
             let count = count + 1;
             let p = Memory.alloc(1);
         }
+        // Reset memory so Output has heap space for printing
+        do Memory.init();
         do Output.printString("testAllocMaxSegments: ");
         do Output.printInt(count);
         do Output.println();
