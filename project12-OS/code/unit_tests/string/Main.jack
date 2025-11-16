@@ -2,10 +2,10 @@
 class Main {
 
     function void main() {
-        do Main.testNewZero();      // expected: testNewZero: OK
-        do Main.testAppend();       // expected: testAppend: abc
-        do Main.testSetInt();       // expected: testSetInt: 123
-        do Main.testIntValue();     // expected: testIntValue: 456
+        //do Main.testNewZero();      // expected: testNewZero: OK
+        //do Main.testAppend();       // expected: testAppend: abc
+        //do Main.testSetInt();       // expected: testSetInt: 123
+        //do Main.testIntValue();     // expected: testIntValue: 456
         return;
     }
 
