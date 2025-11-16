@@ -64,7 +64,8 @@ class Main {
 
     function void testDumpSegments() {
         do Memory.init();
-        do Output.printString("testDumpSegments:\n");
+        do Output.printString("testDumpSegments:");
+        do Output.println();
         do Memory.dumpSegments(5);
         return;
     }
@@ -75,7 +76,8 @@ class Main {
         let p1 = Memory.alloc(10);
         let p2 = Memory.alloc(20);
         do Memory.deAlloc(p1);
-        do Output.printString("testDealloc: after freeing p1\n");
+        do Output.printString("testDealloc: after freeing p1");
+        do Output.println();
         do Memory.dumpSegments(5);
         return;
     }
