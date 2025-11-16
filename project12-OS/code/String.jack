@@ -27,7 +27,7 @@ class String {
     constructor String new(int in_max_length) {
 
         let arr = Array.new(in_max_length);
-        let max_length = max_length;
+        let max_length = in_max_length;
         let length = 0;
 
         return this;
