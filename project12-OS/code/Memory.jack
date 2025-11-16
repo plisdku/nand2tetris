@@ -215,4 +215,27 @@ class Memory {
 
         return;
     }
+
+    // Dump the first n free-list segments: prints address and length per line.
+    function void dumpSegments(int n) {
+        var int cur, i, len;
+
+        let cur = free_list;
+        let i = 0;
+
+        // while cur != -1 and i < n
+        while (~(cur = -1) & (i < n)) {
+            let len = Memory.peek(cur);
+            do Output.printString("seg:");
+            do Output.printInt(cur);
+            do Output.printString(",len=");
+            do Output.printInt(len);
+            do Output.println();
+
+            let cur = Memory.peek(cur+1);
+            let i = i + 1;
+        }
+
+        return;
+    }
 }
