@@ -1,0 +1,46 @@
+class Sys {
+    function void init() {
+        do Math.init();
+        do Output.init();
+        do Screen.init();
+        do Keyboard.init();
+        do Memory.init();
+        do Main.main();
+        do Sys.halt();
+        return;
+    }
+    function void halt() {
+        while (1) {
+            // do nothing
+        }
+        return;
+    }
+
+    function void error(int error_code) {
+        // Print a message f"ERR<error_code>", then end
+
+        do Output.printString("ERR");
+        do Output.printInt(error_code);
+        do Sys.halt();
+        return;
+    }
+
+    function void wait(int duration) {
+
+        var int loops_per_ms;
+        var int ii, jj;
+        let loops_per_ms = 100;
+        let ii = 0;
+
+        while (ii < duration) {
+            let jj = 0;
+            while (jj < loops_per_ms) {
+                // do nothing
+                let jj = jj + 1;
+            }
+            let ii = ii + 1;
+        }
+
+        return;
+    }
+}

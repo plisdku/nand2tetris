@@ -20,9 +20,7 @@ class Memory {
 
         do Memory.reset();
 
-        // Each segment begins with two fields:
-        // length of segment and next pointer.
-        // the available memory in the segment is (length-2) words.
+        return;
     }
 
     function void reset() {
@@ -39,25 +37,31 @@ class Memory {
         // first real node length = heap size - 2,
         // and has no next node.
         let ram[free_list+2] = heap_size - 2;
-        let ram[free_list+3] = null;
+        let ram[free_list+3] = -1;
 
         return;
     }
 
-    function void peek(int address) {
+    function int peek(int address) {
         return ram[address];
     }
 
     function void poke(int address, int value) {
-        ram[address] = value;
+        let ram[address] = value;
         return;
     }
 
     function int segment_length(int node) {
+        if (node = -1) {
+            return -1;
+        }
         return ram[node];
     }
 
     function int next_segment(int node) {
+        if (node = -1) {
+            return -1;
+        }
         return ram[node+1];
     }
 
@@ -68,25 +72,29 @@ class Memory {
     // this could be done by having a dummy first node of length zero or something,
     // so it never gets allocated.
 
-    function int find_segment(cur_node, size) {
+    function int find_segment(int cur_node, int size) {
 
         var int next_node, next_next_node;
 
         // First available segment heuristic.
-        // Return the segment BEFORE the available segment, or null if no segment
+        // Return the segment BEFORE the available segment, or -1 if no segment
         // is found.
 
         let next_node = Memory.next_segment(cur_node);
 
-        while (Memory.segment_length(next_node) < size) {
+        while (~(next_node = -1) & (Memory.segment_length(next_node) < size)) {
             let next_next_node = Memory.next_segment(next_node);
 
-            if (next_next_node = null) {
-                return null;
+            if (next_next_node = -1) {
+                return -1;
             }
 
             let cur_node = next_node;
             let next_node = next_next_node;
+        }
+
+        if (next_node = -1) {
+            return -1;
         }
 
         return cur_node;
@@ -103,6 +111,8 @@ class Memory {
 
         // prev.next = new
         let ram[before_new+1] = new;
+
+        return;
     }
 
 
@@ -110,6 +120,8 @@ class Memory {
 
         // prev.next = remove_me.next
         let ram[before_remove_me+1] = ram[remove_me+1];
+
+        return;
     }
 
     function Array alloc(int size) {
@@ -117,11 +129,12 @@ class Memory {
         var int before_found, found, new;
 
         let before_found = Memory.find_segment(free_list, size);
-        let found = Memory.next_segment(before_found);
 
-        if (before_found = null) {
+        if (before_found = -1) {
             do Sys.error(1234);
         }
+
+        let found = Memory.next_segment(before_found);
 
         if (Memory.segment_length(found) > size + 4) {
 
@@ -144,9 +157,12 @@ class Memory {
             do Memory.remove_segment(before_found, found);
             return found+2;
         }
+
+        // this should not happen but the compiler objected.
+        return -1;
     }
 
-    function void deAlloc(int base) {
+    function void deAlloc(Array base) {
         // deallocate the block of memory starting at base.
         // ram[base-2] is its segment length, and ram[base-1] will be
         // its next pointer.
@@ -163,5 +179,7 @@ class Memory {
         let dummy_segment = free_list;
 
         do Memory.insert_segment(dummy_segment, returned_segment, returned_segment_length);
+
+        return;
     }
 }
