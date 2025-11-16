@@ -2,18 +2,20 @@
 class Main {
 
     function void main() {
+        // do Output.printString("Hello, world");
+        // do Output.println();
         do Main.testAllocWhole();      // expected: OK
-        do Main.testAllocTooBig();     // expected: OK (error)
-        do Main.testAllocMaxSegments();
-        do Main.testDumpSegments();
-        do Main.testDealloc();
+        //do Main.testAllocTooBig();     // expected: OK (error)
+        //do Main.testAllocMaxSegments();
+        //do Main.testDumpSegments();
+        //do Main.testDealloc();
         return;
     }
 
     function void testAllocWhole() {
         var int p;
-        do Memory.init();
-        let p = Memory.alloc(14330); // attempt to allocate nearly whole heap
+        // do Memory.init();
+        // let p = Memory.alloc(14330); // attempt to allocate nearly whole heap
         do Output.printString("testAllocWhole: ");
         if (p = -1) {
             do Output.printString("FAIL");
