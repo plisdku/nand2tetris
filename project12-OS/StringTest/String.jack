@@ -1,0 +1,123 @@
+class String {
+    
+    field int length;
+    field int max_length;
+    field Array arr;
+
+    constructor String new(int in_max_length) {
+
+        let arr = Array.new(in_max_length);
+        let max_length = max_length;
+        let length = 0;
+
+        return this;
+    }
+
+    method void dispose() {
+        do arr.dispose();
+        return;
+    }
+
+    method int length() {
+        return length;
+    }
+
+    method char charAt(int j) {
+        return arr[j];
+    }
+
+    method void setCharAt(int j, char c) {
+        let arr[j] = c;
+        return;
+    }
+
+    method String appendChar(char c) {
+        let arr[length] = c;
+        let length = length + 1;
+        return this;
+    }
+
+    method void eraseLastChar() {
+        let length = length - 1;
+        return;
+    }
+
+    method int intValue() {
+
+        var int sign, idx, msd, place_value, total_value;
+        let sign = 1;
+        let msd = 0;
+        let place_value = 1;
+
+        // If starts with '-'
+        if (arr[0] = 45) {
+            let sign = -1;
+            let msd = 1;
+        }
+
+        let idx = length-1;
+        let total_value = 0;
+        while (~(idx < msd)) {
+            // 48 is code for 0
+            let total_value = total_value + (place_value * (arr[idx] - 48));
+            let idx = idx - 1;
+            let place_value = place_value * 10;
+        }
+
+        return total_value * sign;
+    }
+
+    method void clear() {
+        let length = 0;
+        return;
+    }
+
+    method void setInt(int val) {
+
+        var int idx, place_value, ones;
+        var Array digits;
+
+        do clear();
+
+        let digits = Array.new(6); // seems enough
+
+        if (val < 0) {
+            do appendChar(45); // write minus sign
+            let val = -val;
+        }
+
+        // From here on, val is a positive number!
+        // Generate the digits in reverse order
+
+        let idx = 0;
+        while (val > 0) {
+            let ones = val - ((val / 10)*10);
+            let val = val / 10;
+            let digits[idx] = ones;
+            let idx = idx + 1;
+        }
+        let idx = idx - 1;
+
+        // Now idx points to the last digit in the array.
+        // Write into string in order
+
+        while (~(idx < 0)) {
+            do appendChar(48 + digits[idx]);
+            let idx = idx - 1;
+        }
+        return;
+    }
+
+    function char backSpace() {
+        return 129;
+    }
+
+    function char doubleQuote() {
+        return 34;
+    }
+
+    function char newLine() {
+        return 128;
+    }
+
+}
