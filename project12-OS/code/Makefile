@@ -13,6 +13,8 @@ test:
 unittest:
 	mkdir -p unit_tests/string
 	cp String.jack unit_tests/string/
+	mkdir -p unit_tests/memory
+	cp Memory.jack unit_tests/memory/
 
 submission:
 	mkdir -p ../submission
@@ -39,5 +41,6 @@ clean:
 	rm -f ../SysTest/Sys.jack
 
 	rm -f unit_tests/string/String.jack
+	rm -f unit_tests/memory/Memory.jack
 
 .PHONY: test submission clean
