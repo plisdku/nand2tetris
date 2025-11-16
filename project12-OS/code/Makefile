@@ -10,6 +10,12 @@ test:
 	cp String.jack ../StringTest/
 	cp Sys.jack ../SysTest/
 
+unittest:
+	mkdir -p unit_tests/string
+	cp String.jack unit_tests/string/
+	cp Array.jack unit_tests/string/
+	cp Memory.jack unit_tests/string/
+
 submission:
 	mkdir -p ../submission
 	rm -f ../submission/Archive.zip
@@ -33,5 +39,9 @@ clean:
 	rm -f ../ScreenTest/Screen.jack
 	rm -f ../StringTest/String.jack
 	rm -f ../SysTest/Sys.jack
+
+	rm -f unit_tests/string/String.jack
+	rm -f unit_tests/string/Array.jack
+	rm -f unit_tests/string/Memory.jack
 
 .PHONY: test submission clean

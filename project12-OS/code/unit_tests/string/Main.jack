@@ -1,0 +1,55 @@
+// Minimal unit tests for String
+class Main {
+
+    function void main() {
+        do Main.testNewZero();      // expected: testNewZero: OK
+        do Main.testAppend();       // expected: testAppend: abc
+        do Main.testSetInt();       // expected: testSetInt: 123
+        do Main.testIntValue();     // expected: testIntValue: 456
+        return;
+    }
+
+    function void testNewZero() {
+        var String s;
+        let s = String.new(0);
+        do Output.printString("testNewZero: ");
+        do Output.printString("OK");
+        do Output.println();
+        do s.dispose();
+        return;
+    }
+
+    function void testAppend() {
+        var String s;
+        let s = String.new(6);
+        let s = s.appendChar(97);
+        let s = s.appendChar(98);
+        let s = s.appendChar(99);
+        do Output.printString("testAppend: ");
+        do Output.printString(s);
+        do Output.println();
+        do s.dispose();
+        return;
+    }
+
+    function void testSetInt() {
+        var String s;
+        let s = String.new(6);
+        do s.setInt(123);
+        do Output.printString("testSetInt: ");
+        do Output.printString(s);
+        do Output.println();
+        do s.dispose();
+        return;
+    }
+
+    function void testIntValue() {
+        var String s;
+        let s = "456";
+        do Output.printString("testIntValue: ");
+        do Output.printInt(s.intValue());
+        do Output.println();
+        return;
+    }
+
+}
