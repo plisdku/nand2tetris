@@ -43,28 +43,31 @@ class String {
     }
 
     method int intValue() {
+        var int intVal, index;
+        var boolean neg;
 
-        var int sign, idx, msd, place_value, total_value;
-        let sign = 1;
-        let msd = 0;
-        let place_value = 1;
+        let intVal = 0;
 
-        // If starts with '-'
-        if (arr[0] = 45) {
-            let sign = -1;
-            let msd = 1;
+        // check sign
+        if ((length > 0) & (arr[0] = 45)) {
+            let neg = true;
+            let index = 1;
+        }
+        else {
+            let neg = false;
+            let index = 0;
         }
 
-        let idx = length-1;
-        let total_value = 0;
-        while (~(idx < msd)) {
-            // 48 is code for 0
-            let total_value = total_value + (place_value * (arr[idx] - 48));
-            let idx = idx - 1;
-            let place_value = place_value * 10;
+        // parse left-to-right until non-digit
+        while ((index < length) & ~(arr[index] < 48) & ~(arr[index] > 57)) {
+            let intVal = (intVal * 10) + (arr[index] - 48);
+            let index = index + 1;
         }
 
-        return total_value * sign;
+        if (neg) {
+            return -intVal;
+        }
+        return intVal;
     }
 
     method void clear() {
