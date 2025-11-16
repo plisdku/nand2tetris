@@ -1,0 +1,77 @@
+// Minimal unit tests for Memory
+class Main {
+
+    function void main() {
+        do Main.testAllocWhole();      // expected: OK
+        do Main.testAllocTooBig();     // expected: OK (error)
+        do Main.testAllocMaxSegments();
+        do Main.testDumpSegments();
+        do Main.testDealloc();
+        return;
+    }
+
+    function void testAllocWhole() {
+        var int p;
+        do Memory.init();
+        let p = Memory.alloc(14330); // attempt to allocate nearly whole heap
+        do Output.printString("testAllocWhole: ");
+        if (p = -1) {
+            do Output.printString("FAIL");
+        } else {
+            do Output.printString("OK");
+            do Memory.deAlloc(p);
+        }
+        do Output.println();
+        return;
+    }
+
+    function void testAllocTooBig() {
+        var int p;
+        do Memory.init();
+        let p = Memory.alloc(20000);
+        do Output.printString("testAllocTooBig: ");
+        if (p = -1) {
+            do Output.printString("OK");
+        } else {
+            do Output.printString("FAIL");
+            do Memory.deAlloc(p);
+        }
+        do Output.println();
+        return;
+    }
+
+    // Allocate minimal blocks until failure and print count
+    function void testAllocMaxSegments() {
+        var int p, count;
+        do Memory.init();
+        let count = 0;
+        let p = Memory.alloc(1);
+        while (~(p = -1)) {
+            let count = count + 1;
+            let p = Memory.alloc(1);
+        }
+        do Output.printString("testAllocMaxSegments: ");
+        do Output.printInt(count);
+        do Output.println();
+        return;
+    }
+
+    function void testDumpSegments() {
+        do Memory.init();
+        do Output.printString("testDumpSegments:\n");
+        do Memory.dumpSegments(5);
+        return;
+    }
+
+    function void testDealloc() {
+        var int p1, p2;
+        do Memory.init();
+        let p1 = Memory.alloc(10);
+        let p2 = Memory.alloc(20);
+        do Memory.deAlloc(p1);
+        do Output.printString("testDealloc: after freeing p1\n");
+        do Memory.dumpSegments(5);
+        return;
+    }
+
+}
