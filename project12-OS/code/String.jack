@@ -1,3 +1,23 @@
+/*
+String
+The String class represents strings of char values, and supports commonly needed string
+processing services.
+constructor String new(int maxLength): Constructs a new empty string with a maximum
+length of maxLength and initial length of 0.
+method void dispose(): Disposes this string.
+method int length(): Returns the number of characters in this string.
+method char charAt(int j): Returns the character at the j-th location of this string.
+method void setCharAt(int j, char c): Sets the character at the j-th location of this string to c.
+method String appendChar(char c): Appends c to this string’s end, and returns this string.
+method void eraseLastChar(): Erases the last character from this string.
+method int intValue(): Returns the integer value of this string, until a non-digit char is detected.
+method void setInt(int val): Sets this string to hold a representation of the given value.
+function char backSpace(): Returns the backspace character.
+function char doubleQuote(): Returns the double quote (") character.
+function char newLine(): Returns the newline character.
+*/
+
+
 class String {
     
     field int length;
