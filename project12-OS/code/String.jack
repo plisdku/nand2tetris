@@ -26,8 +26,14 @@ class String {
 
     constructor String new(int in_max_length) {
 
-        let arr = Array.new(in_max_length);
-        let max_length = in_max_length;
+        // Ensure we allocate at least 1 (Array requires positive size)
+        if (in_max_length < 1) {
+            let arr = Array.new(1);
+            let max_length = 1;
+        } else {
+            let arr = Array.new(in_max_length);
+            let max_length = in_max_length;
+        }
         let length = 0;
 
         return this;
@@ -72,13 +78,13 @@ class String {
         if (arr[0] = 45) {
             let sign = -1;
             let msd = 1;
-            do Output.printString("SIGN: NEGATIVE");
-            do Output.println();
+            // do Output.printString("SIGN: NEGATIVE");
+            // do Output.println();
         }
         else
         {
-            do Output.printString("SIGN: POSITIVE");
-            do Output.println();
+            // do Output.printString("SIGN: POSITIVE");
+            // do Output.println();
         }
 
         let idx = length-1;
@@ -87,15 +93,15 @@ class String {
             // 48 is code for 0
             let total_value = total_value + (place_value * (arr[idx] - 48));
 
-            do Output.printString("Total value:");
-            do Output.printInt(total_value);
-            do Output.println();
+            // do Output.printString("Total value:");
+            // do Output.printInt(total_value);
+            // do Output.println();
 
             let idx = idx - 1;
             let place_value = place_value * 10;
         }
-        do Output.printString("Done");
-        do Output.println();
+        // do Output.printString("Done");
+        // do Output.println();
 
         return total_value * sign;
     }
