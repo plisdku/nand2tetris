@@ -13,10 +13,6 @@ class Memory {
     function void init() {
         let ram = 0;
 
-        // freeList = heapBase;
-        // freeList.size = heapSize;
-        // freeList.next = 0;
-
         let heap_base = 2048;
         let heap_size = 16384 - heap_base;
 
@@ -195,6 +191,7 @@ class Memory {
         let before_found = Memory.find_segment(free_list, size);
 
         if (before_found = -1) {
+            do Sys.error(ERR_FIND_SEGMENT);
             return -1;
         }
 
