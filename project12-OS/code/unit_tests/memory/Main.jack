@@ -6,7 +6,7 @@ class Main {
 
         // do Output.printString("Hello, world");
         // do Output.println();
-            do Main.testSplitPlace(); // expected: OK
+        do Main.testResetLayout(); // expected: OK
         // do Main.testAllocWhole();      // expected: OK
         // do Main.testAllocTooBig();     // expected: OK (error)
         // do Main.testAllocMaxSegments();
@@ -159,6 +159,36 @@ class Main {
             do Memory.init();
 
             do Output.printString("testSplitPlace: ");
+            if (ok = 1) {
+                do Output.printString("OK");
+            } else {
+                do Output.printString("FAIL");
+            }
+            do Output.println();
+            return;
+        }
+
+        // Verify Memory.init() establishes the expected initial heap layout.
+        function void testResetLayout() {
+            var int a0, a1, a2, a3, ok;
+
+            do Memory.init();
+
+            let a0 = Memory.peek(2048);
+            let a1 = Memory.peek(2048+1);
+            let a2 = Memory.peek(2048+2);
+            let a3 = Memory.peek(2048+3);
+
+            let ok = 0;
+            // Expect: -1, 2048+2, (16384-2048)-2, -1
+            if ((a0 = -1) & (a1 = 2050) & (a2 = 14334) & (a3 = -1)) {
+                let ok = 1;
+            }
+
+            // Reset heap so Output can allocate
+            do Memory.init();
+
+            do Output.printString("testResetLayout: ");
             if (ok = 1) {
                 do Output.printString("OK");
             } else {
