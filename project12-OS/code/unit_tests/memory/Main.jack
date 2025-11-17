@@ -6,7 +6,8 @@ class Main {
 
         // do Output.printString("Hello, world");
         // do Output.println();
-        do Main.testResetLayout(); // expected: OK
+        // do Main.testResetLayout(); // expected: OK
+        do Main.testAllocSingleCheck(); // expected: OK
         // do Main.testAllocWhole();      // expected: OK
         // do Main.testAllocTooBig();     // expected: OK (error)
         // do Main.testAllocMaxSegments();
@@ -16,10 +17,47 @@ class Main {
     }
 
 
+        // Verify Memory.init() establishes the expected initial heap layout.
+        function void testResetLayout() {
+            var int a0, a1, a2, a3, ok;
+
+            do Memory.init();
+
+            // Inspect first four words of heap
+            // Expect:
+            // ram[2048] = -1        (dummy node)
+            // ram[2049] = 2050      (dummy.next -> first real node)
+            // ram[2050] = 14334     (first real node length = total available - 2)
+            // ram[2051] = -1        (first real node next)
+
+            let a0 = Memory.peek(2048);
+            let a1 = Memory.peek(2048+1);
+            let a2 = Memory.peek(2048+2);
+            let a3 = Memory.peek(2048+3);
+
+            let ok = 0;
+            // Expect: -1, 2048+2, (16384-2048)-2, -1
+            if ((a0 = -1) & (a1 = 2050) & (a2 = 14334) & (a3 = -1)) {
+                let ok = 1;
+            }
+
+            // Reset heap so Output can allocate
+            do Memory.init();
+
+            do Output.printString("testResetLayout: ");
+            if (ok = 1) {
+                do Output.printString("OK");
+            } else {
+                do Output.printString("FAIL");
+            }
+            do Output.println();
+            return;
+        }
+
     // Allocate a single block and verify free-list head and first real node look sane.
     // No printing until after Memory.init() resets the heap.
     function void testAllocSingleCheck() {
-        var int p, head, first, len, ok;
+        var int p, a0, a1, a2, a3, a4, ok;
 
         // initialize heap
         do Memory.init();
@@ -27,19 +65,23 @@ class Main {
         // allocate one moderate block
         let p = Memory.alloc(100);
 
-        // default to fail
-        let ok = 0;
+        // Expected state (correct split behavior):
+        // ram[2048] = -1        (dummy node)
+        // ram[2049] = 2152      (dummy.next -> new free segment at found+2+size)
+        // ram[2050] = 102       (found.header = allocated total = size+2)
+        // ram[2152] = 14232     (new free segment length = original_len - size - 2)
+        // ram[2153] = -1        (new.next = -1)
 
+        let ok = 0; // fail until checks pass
         if (~(p = -1)) {
-            // inspect free-list head (dummy) at heap base 2048
-            let head = 2048;
-            let first = Memory.peek(head+1); // pointer to first real node
-            if (~(first = -1)) {
-                let len = Memory.peek(first);
-                // first real node should have positive length
-                if (len > 0) {
-                    let ok = 1;
-                }
+            let a0 = Memory.peek(2048);
+            let a1 = Memory.peek(2049);
+            let a2 = Memory.peek(2050);
+            let a3 = Memory.peek(2152);
+            let a4 = Memory.peek(2153);
+
+            if ((a0 = -1) & (a1 = 2152) & (a2 = 102) & (a3 = 14232) & (a4 = -1)) {
+                let ok = 1;
             }
         }
 
@@ -51,6 +93,16 @@ class Main {
             do Output.printString("OK");
         } else {
             do Output.printString("FAIL");
+            do Output.println();
+            do Output.printInt(a0);
+            do Output.println();
+            do Output.printInt(a1);
+            do Output.println();
+            do Output.printInt(a2);
+            do Output.println();
+            do Output.printInt(a3);
+            do Output.println();
+            do Output.printInt(a4);
         }
         do Output.println();
         return;
@@ -168,34 +220,5 @@ class Main {
             return;
         }
 
-        // Verify Memory.init() establishes the expected initial heap layout.
-        function void testResetLayout() {
-            var int a0, a1, a2, a3, ok;
-
-            do Memory.init();
-
-            let a0 = Memory.peek(2048);
-            let a1 = Memory.peek(2048+1);
-            let a2 = Memory.peek(2048+2);
-            let a3 = Memory.peek(2048+3);
-
-            let ok = 0;
-            // Expect: -1, 2048+2, (16384-2048)-2, -1
-            if ((a0 = -1) & (a1 = 2050) & (a2 = 14334) & (a3 = -1)) {
-                let ok = 1;
-            }
-
-            // Reset heap so Output can allocate
-            do Memory.init();
-
-            do Output.printString("testResetLayout: ");
-            if (ok = 1) {
-                do Output.printString("OK");
-            } else {
-                do Output.printString("FAIL");
-            }
-            do Output.println();
-            return;
-        }
 
 }

@@ -167,7 +167,10 @@ class Memory {
             let new = found + 2 + size;
             
             // new segment length = original_length - header_size - allocated_size
-            do Memory.insert_segment(before_found, new, found_length - size - 2);
+            // Insert the new free segment after the allocated block (found),
+            // then unlink the old found node so before_found points to new.
+            do Memory.insert_segment(found, new, found_length - size - 2);
+            do Memory.remove_segment(before_found, found);
 
             // Update found segment to exact allocation size + header
             let ram[found] = size + 2;
