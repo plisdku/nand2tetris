@@ -63,12 +63,14 @@ class Memory {
     }
 
     function int next_segment(int node) {
+
+        var int limit;
+        
         // Return -1 for invalid node (caller should handle this)
         if (node = -1) {
             return -1;
         }
 
-        var int limit;
         let limit = heap_base + heap_size;
 
         // Guard: node must lie within the heap range and have a following word
