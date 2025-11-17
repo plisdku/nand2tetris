@@ -1,7 +1,5 @@
 class Sys {
     function void init() {
-        var int x;
-
         do Memory.init();
         do Math.init();
         do Output.init();
@@ -9,13 +7,10 @@ class Sys {
         do Keyboard.init();
         do Main.main();
         do Sys.halt();
-        while (true) {
-            let x = 1;
-        }
         return;
     }
     function void halt() {
-        while (1) {
+        while (true) {
             // do nothing
         }
         return;
