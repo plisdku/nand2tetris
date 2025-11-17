@@ -12,7 +12,8 @@ class Main {
         // do Main.testAllocTooBig();     // expected: OK (error)
         // do Main.testAllocMaxSegments();
         // do Main.testDumpSegments();
-        do Main.testDealloc();
+        // do Main.testDealloc();
+        do Main.testFindSegmentLoop(); // expected: error message
         return;
     }
 
@@ -259,6 +260,34 @@ class Main {
             } else {
                 do Output.printString("FAIL");
             }
+            do Output.println();
+            return;
+        }
+
+        // Optional diagnostic: create a simple self-cycle in the free list and
+        // call find_segment to reproduce an infinite-loop condition. Not called
+        // by default; uncomment in `main` if you want to reproduce locally.
+        function void testFindSegmentLoop() {
+            var int first;
+
+            do Memory.init();
+
+            // first real node address
+            let first = Memory.peek(2048+1);
+
+            // make the node have a small length so the search will enter the
+            // while-loop and iterate the free list
+            do Memory.poke(first, 1);
+            // make the node point to itself (cycle)
+            do Memory.poke(first+1, first);
+
+            // This should trigger the iteration guard and call Sys.error
+            // Use a requested size larger than the node length to force traversal
+            do Memory.find_segment(2048, 100);
+
+            // If we get here, the guard didn't trigger
+            do Memory.init();
+            do Output.printString("testFindSegmentLoop: FAIL (no error)");
             do Output.println();
             return;
         }

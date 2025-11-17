@@ -75,12 +75,16 @@ class Memory {
 
         // Guard: node must lie within the heap range and have a following word
         if (node < heap_base) {
-            do Sys.error("'That' segment must be in the Heap or Screen range in Memory.next_segment.15");
+            do Output.printString("'That' segment must be in the Heap or Screen range in Memory.next_segment.15");
+            do Output.println();
+            do Sys.error(1);
             return -1;
         }
 
         if (~(node+1 < limit)) {
-            do Sys.error("'That' segment must be in the Heap or Screen range in Memory.next_segment.15");
+            do Output.printString("'That' segment must be in the Heap or Screen range in Memory.next_segment.15");
+            do Output.println();
+            do Sys.error(1);
             return -1;
         }
 
@@ -96,15 +100,25 @@ class Memory {
 
     function int find_segment(int cur_node, int size) {
 
-        var int next_node, next_next_node;
+        var int next_node, next_next_node, iter;
 
         // First available segment heuristic.
         // Return the segment BEFORE the available segment, or -1 if no segment
-        // is found.
+        // is found. Add an iteration guard to detect free-list cycles (infinite
+        // loops) and fail fast with a clear error message.
 
         let next_node = Memory.next_segment(cur_node);
+        let iter = 0;
 
         while (~(next_node = -1) & (Memory.segment_length(next_node) < size)) {
+            let iter = iter + 1;
+            if (iter > 10000) {
+                do Output.printString("free-list loop detected in Memory.find_segment");
+                do Output.println();
+                do Sys.error(2);
+                return -1;
+            }
+
             let next_next_node = Memory.next_segment(next_node);
 
             if (next_next_node = -1) {
