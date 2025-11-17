@@ -22,7 +22,7 @@ class Memory {
 
         // Error code constants (initialized at runtime)
         let ERR_NEXT_SEGMENT = 1;
-        let ERR_FIND_SEGMENT = 2;
+        let ERR_FIND_SEGMENT = 47;
 
         do Memory.reset();
 
@@ -123,13 +123,9 @@ class Memory {
         while (~(next_node = -1) & (Memory.segment_length(next_node) < size)) {
             let iter = iter + 1;
             if (iter > 10000) {
-                do Output.printString("free-list loop detected in Memory.find_segment");
-                do Output.println();
-                do Output.printString(" iter=");
+                // Minimal diagnostics: print iteration and node ids (no String allocations)
                 do Output.printInt(iter);
-                do Output.printString(" cur=");
                 do Output.printInt(cur_node);
-                do Output.printString(" next=");
                 do Output.printInt(next_node);
                 do Output.println();
                 do Sys.error(ERR_FIND_SEGMENT);
