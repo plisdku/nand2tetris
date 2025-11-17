@@ -1,10 +1,8 @@
 class Memory {
     
     static Array ram;
-    static int free_list;
-    static int free_list_size;
-    static int free_list_next;
 
+    static int free_list;
     static int heap_base;
     static int heap_size;
     static int ERR_NEXT_SEGMENT;
@@ -191,7 +189,7 @@ class Memory {
         let before_found = Memory.find_segment(free_list, size);
 
         if (before_found = -1) {
-            do Sys.error(ERR_FIND_SEGMENT);
+            // do Sys.error(ERR_FIND_SEGMENT);
             return -1;
         }
 
