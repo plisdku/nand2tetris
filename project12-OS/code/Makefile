@@ -46,4 +46,7 @@ clean:
 	rm -f unit_tests/memory/Memory.jack
 	rm -f unit_tests/math/Math.jack
 
+	# Remove any generated submission artifacts
+	rm -rf ../submission
+
 .PHONY: test submission clean

@@ -77,12 +77,22 @@ class Memory {
         if (node < heap_base) {
             do Output.printString("'That' segment must be in the Heap or Screen range in Memory.next_segment.15");
             do Output.println();
+            do Output.printString(" node=");
+            do Output.printInt(node);
+            do Output.printString(" limit=");
+            do Output.printInt(limit);
+            do Output.println();
             do Sys.error(1);
             return -1;
         }
 
         if (~(node+1 < limit)) {
             do Output.printString("'That' segment must be in the Heap or Screen range in Memory.next_segment.15");
+            do Output.println();
+            do Output.printString(" node=");
+            do Output.printInt(node);
+            do Output.printString(" limit=");
+            do Output.printInt(limit);
             do Output.println();
             do Sys.error(1);
             return -1;
@@ -114,6 +124,13 @@ class Memory {
             let iter = iter + 1;
             if (iter > 10000) {
                 do Output.printString("free-list loop detected in Memory.find_segment");
+                do Output.println();
+                do Output.printString(" iter=");
+                do Output.printInt(iter);
+                do Output.printString(" cur=");
+                do Output.printInt(cur_node);
+                do Output.printString(" next=");
+                do Output.printInt(next_node);
                 do Output.println();
                 do Sys.error(2);
                 return -1;
