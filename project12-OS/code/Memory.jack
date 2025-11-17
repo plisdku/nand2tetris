@@ -259,11 +259,16 @@ class Memory {
             return;
         }
 
-        let dummy_segment = free_list;
+        // let dummy_segment = free_list;
 
-        // Insert after dummy node (simple, avoids fragmentation complexity)
-        do Memory.insert_segment(dummy_segment, returned_segment, returned_segment_length);
+        // // Insert after dummy node (simple, avoids fragmentation complexity)
+        // do Memory.insert_segment(dummy_segment, returned_segment, returned_segment_length);
 
+        do Output.printString("Deallocating segment at ");
+        do Output.printInt(returned_segment);
+        do Output.printString(" of length ");
+        do Output.printInt(returned_segment_length);
+        do Output.println();
         return;
     }
 

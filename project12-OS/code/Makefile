@@ -1,14 +1,14 @@
 # Simple Makefile for Nand2Tetris Project 12 - OS Implementation
 
 test:
-	cp Array.jack ../ArrayTest/
-	cp Keyboard.jack ../KeyboardTest/
-	cp Math.jack ../MathTest/
-	cp Memory.jack ../MemoryTest/
-	cp Output.jack ../OutputTest/
-	cp Screen.jack ../ScreenTest/
-	cp String.jack ../StringTest/
-	cp Sys.jack ../SysTest/
+	cp Array.jack ../tests/ArrayTest/
+	cp Keyboard.jack ../tests/KeyboardTest/
+	cp Math.jack ../tests/MathTest/
+	cp Memory.jack ../tests/MemoryTest/
+	cp Output.jack ../tests/OutputTest/
+	cp Screen.jack ../tests/ScreenTest/
+	cp String.jack ../tests/StringTest/
+	cp Sys.jack ../tests/SysTest/
 
 unittest:
 	mkdir -p unit_tests/string
@@ -32,15 +32,16 @@ submission:
 	cp lang.txt ../submission/
 	cd ../submission && zip Archive.zip *.jack lang.txt
 
+
 clean:
-	rm -f ../ArrayTest/Array.jack
-	rm -f ../KeyboardTest/Keyboard.jack
-	rm -f ../MathTest/Math.jack
-	rm -f ../MemoryTest/Memory.jack
-	rm -f ../OutputTest/Output.jack
-	rm -f ../ScreenTest/Screen.jack
-	rm -f ../StringTest/String.jack
-	rm -f ../SysTest/Sys.jack
+	rm -f ../tests/ArrayTest/Array.jack
+	rm -f ../tests/KeyboardTest/Keyboard.jack
+	rm -f ../tests/MathTest/Math.jack
+	rm -f ../tests/MemoryTest/Memory.jack
+	rm -f ../tests/OutputTest/Output.jack
+	rm -f ../tests/ScreenTest/Screen.jack
+	rm -f ../tests/StringTest/String.jack
+	rm -f ../tests/SysTest/Sys.jack
 
 	rm -f unit_tests/string/String.jack
 	rm -f unit_tests/memory/Memory.jack
