@@ -21,7 +21,7 @@ class Memory {
         let heap_size = 16384 - heap_base;
 
         // Error code constants (initialized at runtime)
-        let ERR_NEXT_SEGMENT = 1;
+        let ERR_NEXT_SEGMENT = 46;
         let ERR_FIND_SEGMENT = 47;
 
         do Memory.reset();
