@@ -1,0 +1,78 @@
+// Minimal unit tests for Math
+class Main {
+
+    function void main() {
+        do Main.testMultiply();
+        do Main.testDivide();
+        do Main.testSqrt();
+        return;
+    }
+
+    function void testMultiply() {
+        var int ok, r1, r2;
+        // Check basic positive multiply
+        let ok = 0;
+        let r1 = Math.multiply(3,5); // expect 15
+        let r2 = Math.multiply(7,6); // expect 42
+        if ((r1 = 15) & (r2 = 42)) {
+            let ok = 1;
+        }
+        // Reset (safe) and print
+        do Memory.init();
+        do Output.printString("testMultiply: ");
+        if (ok = 1) {
+            do Output.printString("OK");
+        } else {
+            do Output.printString("FAIL r1="); do Output.printInt(r1);
+            do Output.printString(" r2="); do Output.printInt(r2);
+        }
+        do Output.println();
+        return;
+    }
+
+    function void testDivide() {
+        var int ok, a, b, c, d;
+        // Check divide positive and negative
+        let ok = 0;
+        let a = Math.divide(7,2);   // expect 3
+        let b = Math.divide(8,4);   // expect 2
+        let c = Math.divide(-7,2);  // expect -3
+        let d = Math.divide(7,-2);  // expect -3
+        if ((a = 3) & (b = 2) & (c = -3) & (d = -3)) {
+            let ok = 1;
+        }
+        do Memory.init();
+        do Output.printString("testDivide: ");
+        if (ok = 1) {
+            do Output.printString("OK");
+        } else {
+            do Output.printString("FAIL a="); do Output.printInt(a);
+            do Output.printString(" b="); do Output.printInt(b);
+            do Output.printString(" c="); do Output.printInt(c);
+            do Output.printString(" d="); do Output.printInt(d);
+        }
+        do Output.println();
+        return;
+    }
+
+    function void testSqrt() {
+        var int ok, r1, r2;
+        let ok = 0;
+        let r1 = Math.sqrt(16); // expect 4
+        let r2 = Math.sqrt(20); // expect 4 (floor)
+        if ((r1 = 4) & (r2 = 4)) {
+            let ok = 1;
+        }
+        do Memory.init();
+        do Output.printString("testSqrt: ");
+        if (ok = 1) {
+            do Output.printString("OK");
+        } else {
+            do Output.printString("FAIL r1="); do Output.printInt(r1);
+            do Output.printString(" r2="); do Output.printInt(r2);
+        }
+        do Output.println();
+        return;
+    }
+
+}
