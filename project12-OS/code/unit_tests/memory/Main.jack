@@ -10,9 +10,9 @@ class Main {
         // do Main.testAllocSingleCheck(); // expected: OK
         // do Main.testAllocWhole();      // expected: OK
         // do Main.testAllocTooBig();     // expected: OK (error)
-        do Main.testAllocMaxSegments();
+        // do Main.testAllocMaxSegments();
         // do Main.testDumpSegments();
-        //do Main.testDealloc();
+        do Main.testDealloc();
         return;
     }
 
@@ -178,14 +178,46 @@ class Main {
     }
 
     function void testDealloc() {
-        var int p1, p2;
+        var int p1, p2, a0, a1, a2, a3, a4, ok;
+
+        // Succinct expected state after allocating 10, 20 and freeing the first (10):
+        // ram[2048] = -1        (dummy)
+        // ram[2049] = 2050      (dummy.next -> returned segment header)
+        // ram[2050] = 12        (returned segment length = 10 + 2)
+        // ram[2051] = 2084      (returned_segment.next -> points to second free chunk)
+        // ram[2084] = 14300     (remaining free length)
+
         do Memory.init();
         let p1 = Memory.alloc(10);
         let p2 = Memory.alloc(20);
         do Memory.deAlloc(p1);
-        do Output.printString("testDealloc: after freeing p1");
+
+        let ok = 0;
+        let a0 = Memory.peek(2048);
+        let a1 = Memory.peek(2049);
+        let a2 = Memory.peek(2050);
+        let a3 = Memory.peek(2051);
+        let a4 = Memory.peek(2084);
+
+        if ((a0 = -1) & (a1 = 2050) & (a2 = 12) & (a3 = 2084) & (a4 = 14300)) {
+            let ok = 1;
+        }
+
+        // Reset memory so Output can allocate
+        do Memory.init();
+
+        do Output.printString("testDealloc: ");
+        if (ok = 1) {
+            do Output.printString("OK");
+        } else {
+            do Output.printString("FAIL:");
+            do Output.printString(" a0="); do Output.printInt(a0);
+            do Output.printString(" a1="); do Output.printInt(a1);
+            do Output.printString(" a2="); do Output.printInt(a2);
+            do Output.printString(" a3="); do Output.printInt(a3);
+            do Output.printString(" a4="); do Output.printInt(a4);
+        }
         do Output.println();
-        do Memory.dumpSegments(5);
         return;
     }
 
