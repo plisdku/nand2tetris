@@ -7,6 +7,8 @@ class Memory {
 
     static int heap_base;
     static int heap_size;
+    static int ERR_NEXT_SEGMENT;
+    static int ERR_FIND_SEGMENT;
 
     function void init() {
         let ram = 0;
@@ -17,6 +19,10 @@ class Memory {
 
         let heap_base = 2048;
         let heap_size = 16384 - heap_base;
+
+        // Error code constants (initialized at runtime)
+        let ERR_NEXT_SEGMENT = 1;
+        let ERR_FIND_SEGMENT = 2;
 
         do Memory.reset();
 
@@ -75,26 +81,20 @@ class Memory {
 
         // Guard: node must lie within the heap range and have a following word
         if (node < heap_base) {
-            do Output.printString("'That' segment must be in the Heap or Screen range in Memory.next_segment.15");
-            do Output.println();
-            do Output.printString(" node=");
+            // Minimal non-allocating diagnostic: print the node and limit as ints
             do Output.printInt(node);
-            do Output.printString(" limit=");
             do Output.printInt(limit);
             do Output.println();
-            do Sys.error(1);
+            do Sys.error(ERR_NEXT_SEGMENT);
             return -1;
         }
 
         if (~(node+1 < limit)) {
-            do Output.printString("'That' segment must be in the Heap or Screen range in Memory.next_segment.15");
-            do Output.println();
-            do Output.printString(" node=");
+            // Minimal non-allocating diagnostic: print the node and limit as ints
             do Output.printInt(node);
-            do Output.printString(" limit=");
             do Output.printInt(limit);
             do Output.println();
-            do Sys.error(1);
+            do Sys.error(ERR_NEXT_SEGMENT);
             return -1;
         }
 
@@ -132,7 +132,7 @@ class Memory {
                 do Output.printString(" next=");
                 do Output.printInt(next_node);
                 do Output.println();
-                do Sys.error(2);
+                do Sys.error(ERR_FIND_SEGMENT);
                 return -1;
             }
 
@@ -264,11 +264,11 @@ class Memory {
         // // Insert after dummy node (simple, avoids fragmentation complexity)
         // do Memory.insert_segment(dummy_segment, returned_segment, returned_segment_length);
 
-        do Output.printString("Deallocating segment at ");
-        do Output.printInt(returned_segment);
-        do Output.printString(" of length ");
-        do Output.printInt(returned_segment_length);
-        do Output.println();
+        // do Output.printString("Deallocating segment at ");
+        // do Output.printInt(returned_segment);
+        // do Output.printString(" of length ");
+        // do Output.printInt(returned_segment_length);
+        // do Output.println();
         return;
     }
 
