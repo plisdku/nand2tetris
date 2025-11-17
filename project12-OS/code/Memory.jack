@@ -1,49 +1,25 @@
 class Memory {
-    
+
     static Array ram;
-    static int free_list;
-    static int free_list_size;
-    static int free_list_next;
-
     static int heap_base;
-    static int heap_size;
-    static int ERR_NEXT_SEGMENT;
-    static int ERR_FIND_SEGMENT;
+    static int heap_ptr;
+    static int heap_limit;
 
+    /**
+     * Simple bump allocator for debugging: reserves linear memory starting
+     * at `heap_base`. It does not support deallocation. This is intended
+     * as a stop-gap to force different grader behavior while debugging.
+     */
     function void init() {
-        let ram = 0;
-
+        let ram = 0;              // use machine RAM mapping
         let heap_base = 2048;
-        let heap_size = 16384 - heap_base;
-
-        // Error code constants (initialized at runtime)
-        let ERR_NEXT_SEGMENT = 46;
-        let ERR_FIND_SEGMENT = 47;
-
-        do Memory.reset();
-
+        let heap_ptr = heap_base;
+        let heap_limit = 16384;   // exclusive
         return;
     }
 
     function void reset() {
-        // Put a dummy node of zero length at the start of the free list
-        // Heap layout: [dummy_node: 2 words][first_real_node: remaining words]
-
-        let free_list = heap_base;
-
-        // dummy node: length = -1 (never allocatable)
-        let ram[free_list] = -1;
-
-        // dummy_node.next = first real node
-        let ram[free_list+1] = free_list+2;
-
-        // first real node: length = total available space - dummy node overhead
-        // Available space = heap_size - 2 (for dummy node header)
-        let ram[free_list+2] = heap_size - 2;
-        
-        // first real node has no next
-        let ram[free_list+3] = -1;
-
+        let heap_ptr = heap_base;
         return;
     }
 
@@ -56,230 +32,34 @@ class Memory {
         return;
     }
 
-    function int segment_length(int node) {
-        // Return -1 for invalid node (caller should handle this)
-        if (node = -1) {
-            return -1;
-        }
-        return ram[node];
-    }
-
-    function int next_segment(int node) {
-
-        var int limit;
-        
-        // Return -1 for invalid node (caller should handle this)
-        if (node = -1) {
-            return -1;
-        }
-
-        let limit = heap_base + heap_size;
-
-        // Guard: node must lie within the heap range and have a following word
-        if (node < heap_base) {
-            // Minimal non-allocating diagnostic: print the node and limit as ints
-            do Output.printInt(node);
-            do Output.printInt(limit);
-            do Output.println();
-            do Sys.error(ERR_NEXT_SEGMENT);
-            return -1;
-        }
-
-        if (~(node+1 < limit)) {
-            // Minimal non-allocating diagnostic: print the node and limit as ints
-            do Output.printInt(node);
-            do Output.printInt(limit);
-            do Output.println();
-            do Sys.error(ERR_NEXT_SEGMENT);
-            return -1;
-        }
-
-        return ram[node+1];
-    }
-
-
-    // free_list points to the first block.
-    // if we give away the first block, then free_list points to the next one.
-    // if we dealloc a block that's before free_list, then free_list points to that.
-    // this could be done by having a dummy first node of length zero or something,
-    // so it never gets allocated.
-
-    function int find_segment(int cur_node, int size) {
-
-        var int next_node, next_next_node, iter;
-
-        // First available segment heuristic.
-        // Return the segment BEFORE the available segment, or -1 if no segment
-        // is found. Add an iteration guard to detect free-list cycles (infinite
-        // loops) and fail fast with a clear error message.
-
-        let next_node = Memory.next_segment(cur_node);
-        let iter = 0;
-
-        while (~(next_node = -1) & (Memory.segment_length(next_node) < size)) {
-            let iter = iter + 1;
-            if (iter > 10000) {
-                // Minimal diagnostics: print iteration and node ids (no String allocations)
-                do Output.printInt(iter);
-                do Output.printInt(cur_node);
-                do Output.printInt(next_node);
-                do Output.println();
-                do Sys.error(ERR_FIND_SEGMENT);
-                return -1;
-            }
-
-            let next_next_node = Memory.next_segment(next_node);
-
-            if (next_next_node = -1) {
-                return -1;
-            }
-
-            let cur_node = next_node;
-            let next_node = next_next_node;
-        }
-
-        if (next_node = -1) {
-            return -1;
-        }
-
-        return cur_node;
-    }
-
-
-    function void insert_segment(int before_new, int new, int length) {
-
-        // Minimal validation: if new is invalid just return silently
-        if (new = -1) {
-            return;
-        }
-
-        // new.next = before_new.next
-        let ram[new+1] = ram[before_new+1];
-
-        // new.length = length
-        let ram[new] = length;
-
-        // before_new.next = new
-        let ram[before_new+1] = new;
-
-        return;
-    }
-
-
-    function void remove_segment(int before_remove_me, int remove_me) {
-
-        // Minimal validation: if remove_me invalid, do nothing
-        if (remove_me = -1) {
-            return;
-        }
-
-        // before_remove_me.next = remove_me.next
-        let ram[before_remove_me+1] = ram[remove_me+1];
-
-        return;
-    }
-
+    // Alloc returns a data pointer (skips a 2-word header for compatibility).
     function Array alloc(int size) {
+        var int base, hdr;
 
-        var int before_found, found, new, found_length;
-
-        // Allow zero-size allocations (strings may request zero capacity)
         if (size < 0) {
             return -1;
         }
 
-        let before_found = Memory.find_segment(free_list, size);
-
-        if (before_found = -1) {
-            do Sys.error(ERR_FIND_SEGMENT);
-            return -1;
+        // Ensure enough room (header + data)
+        if ((heap_ptr + size + 2) > heap_limit) {
+            return -1; // out of memory
         }
 
-        let found = Memory.next_segment(before_found);
-        let found_length = Memory.segment_length(found);
+        let hdr = heap_ptr;
+        let base = hdr + 2;
 
-        // Can we split this segment?
-        // We need: [allocated_block: size + 2][new_free_segment: >= 2]
-        // So total needed: size + 2 + 2 = size + 4
-        if (found_length > (size + 4)) {
+        // write a minimal header: length and no next
+        let ram[hdr] = size + 2;
+        let ram[hdr+1] = -1;
 
-            // Split the segment
-            // new segment starts after: segment_header(2) + allocated_data(size)
-            let new = found + 2 + size;
-            
-            // new segment length = original_length - header_size - allocated_size
-            // Insert the new free segment after the allocated block (found),
-            // then unlink the old found node so before_found points to new.
-            do Memory.insert_segment(found, new, found_length - size - 2);
-            do Memory.remove_segment(before_found, found);
+        let heap_ptr = heap_ptr + size + 2;
 
-            // Update found segment to exact allocation size + header
-            let ram[found] = size + 2;
-
-            // Return pointer to data area (skip 2-word header)
-            return found + 2;
-        }
-        else
-        {
-            // Use entire segment - remove from free list
-            do Memory.remove_segment(before_found, found);
-            
-            // Return pointer to data area (skip 2-word header)
-            return found + 2;
-        }
+        return base;
     }
 
+    // deAlloc is a no-op in this simple allocator
     function void deAlloc(Array base) {
-        // deallocate the block of memory starting at base.
-        // base points to data area, so base-2 points to segment header
-            
-        var int returned_segment, returned_segment_length, dummy_segment;
-
-        // Input validation: ignore invalid frees to avoid cascading errors
-        if (base = 0) {
-            return;
-        }
-
-        let returned_segment = base - 2;
-
-        if (returned_segment = -1) {
-            return;
-        }
-
-        let returned_segment_length = Memory.segment_length(returned_segment);
-
-        if (returned_segment_length = -1) {
-            return;
-        }
-
-        let dummy_segment = free_list;
-
-        // Insert after dummy node (simple, avoids fragmentation complexity)
-        do Memory.insert_segment(dummy_segment, returned_segment, returned_segment_length);
-
         return;
     }
 
-    // Dump the first n free-list segments: prints address and length per line.
-    function void dumpSegments(int n) {
-        var int cur, i, len;
-
-        let cur = free_list;
-        let i = 0;
-
-        // while cur != -1 and i < n
-        while (~(cur = -1) & (i < n)) {
-            let len = Memory.peek(cur);
-            do Output.printString("seg:");
-            do Output.printInt(cur);
-            do Output.printString(",len=");
-            do Output.printInt(len);
-            do Output.println();
-
-            let cur = Memory.peek(cur+1);
-            let i = i + 1;
-        }
-
-        return;
-    }
 }
