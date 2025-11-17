@@ -7,10 +7,10 @@ class Main {
         // do Output.printString("Hello, world");
         // do Output.println();
         // do Main.testResetLayout(); // expected: OK
-        do Main.testAllocSingleCheck(); // expected: OK
+        // do Main.testAllocSingleCheck(); // expected: OK
         // do Main.testAllocWhole();      // expected: OK
         // do Main.testAllocTooBig();     // expected: OK (error)
-        // do Main.testAllocMaxSegments();
+        do Main.testAllocMaxSegments();
         // do Main.testDumpSegments();
         //do Main.testDealloc();
         return;
@@ -142,7 +142,10 @@ class Main {
 
     // Allocate minimal blocks until failure and print count
     function void testAllocMaxSegments() {
-        var int p, count;
+        var int p, count, expected;
+        // Explanation: initial free words = heap_size - 2 = 14334.
+        // Each allocation of size 1 consumes 1 data + 2 header = 3 words.
+        // Expected number of allocations = 14334 / 3 = 4778.
         do Memory.init();
         let count = 0;
         let p = Memory.alloc(1);
@@ -152,8 +155,16 @@ class Main {
         }
         // Reset memory so Output has heap space for printing
         do Memory.init();
+        let expected = 14334 / 3; // 4778
         do Output.printString("testAllocMaxSegments: ");
-        do Output.printInt(count);
+        if (count = expected) {
+            do Output.printString("OK");
+        } else {
+            do Output.printString("FAIL: got=");
+            do Output.printInt(count);
+            do Output.printString(",exp=");
+            do Output.printInt(expected);
+        }
         do Output.println();
         return;
     }
