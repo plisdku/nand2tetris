@@ -67,6 +67,21 @@ class Memory {
         if (node = -1) {
             return -1;
         }
+
+        var int limit;
+        let limit = heap_base + heap_size;
+
+        // Guard: node must lie within the heap range and have a following word
+        if (node < heap_base) {
+            do Sys.error("'That' segment must be in the Heap or Screen range in Memory.next_segment.15");
+            return -1;
+        }
+
+        if (~(node+1 < limit)) {
+            do Sys.error("'That' segment must be in the Heap or Screen range in Memory.next_segment.15");
+            return -1;
+        }
+
         return ram[node+1];
     }
 
