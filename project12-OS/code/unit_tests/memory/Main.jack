@@ -6,14 +6,14 @@ class Main {
 
         // do Output.printString("Hello, world");
         // do Output.println();
-        // do Main.testResetLayout(); // expected: OK
-        // do Main.testAllocSingleCheck(); // expected: OK
-        // do Main.testAllocWhole();      // expected: OK
-        // do Main.testAllocTooBig();     // expected: OK (error)
-        // do Main.testAllocMaxSegments();
-        // do Main.testDumpSegments();
-        // do Main.testDealloc();
-        do Main.testFindSegmentLoop(); // expected: error message
+        do Main.testResetLayout(); // expected: OK
+        do Main.testAllocSingleCheck(); // expected: OK
+        do Main.testAllocWhole();      // expected: OK
+        do Main.testAllocTooBig();     // expected: OK (error)
+        do Main.testAllocMaxSegments();
+        do Main.testDumpSegments();
+        do Main.testDealloc();
+        // do Main.testFindSegmentLoop(); // expected: error message
         return;
     }
 
